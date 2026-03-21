@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>OSRS PVM Dashboard — Southp0le</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: #0e0a04; }
+  body {
+    font-family: 'Crimson Pro', Georgia, serif;
+    background: linear-gradient(160deg, #120e05 0%, #1e1608 50%, #120e05 100%);
+    min-height: 100vh;
+    color: #e8d9b0;
+  }
+  #app { max-width: 900px; margin: 0 auto; padding: 0 0 40px; }
+
+  /* HEADER */
+  .header {
+    border-bottom: 2px solid #b8902a;
+    padding: 14px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+    background: rgba(184,144,42,0.07);
+    position: sticky; top: 0; z-index: 10;
+    backdrop-filter: blur(4px);
+  }
+  .header-title { font-family: 'Cinzel', serif; font-size: 18px; font-weight: 700; color: #f0d070; letter-spacing: 3px; text-transform: uppercase; }
+  .header-sub { font-size: 11px; color: #b8902a; letter-spacing: 1px; font-family: 'Cinzel', serif; margin-top: 3px; }
+  .header-right { display: flex; align-items: center; gap: 8px; }
+
+  /* INPUTS */
+  .input-row { display: flex; gap: 8px; padding: 12px 16px 0; }
+  input[type="text"] {
+    flex: 1; background: rgba(0,0,0,0.45); border: 1px solid #5a420a;
+    border-radius: 3px; padding: 8px 12px; color: #e8d9b0;
+    font-family: 'Crimson Pro', Georgia, serif; font-size: 14px; outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="text"]:focus { border-color: #b8902a; }
+  .btn {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px;
+    padding: 8px 16px; border: 1px solid #b8902a; background: rgba(184,144,42,0.15);
+    color: #f0d070; border-radius: 3px; cursor: pointer; transition: all 0.15s;
+    text-transform: uppercase; white-space: nowrap;
+  }
+  .btn:hover { background: rgba(184,144,42,0.28); }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* TABS */
+  .tabs { display: flex; border-bottom: 1px solid #5a420a; background: rgba(0,0,0,0.35); margin-top: 12px; }
+  .tab {
+    font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.2px;
+    text-transform: uppercase; padding: 11px 0; cursor: pointer; border: none;
+    flex: 1; background: transparent; color: #b8902a;
+    border-bottom: 2px solid transparent; opacity: 0.55; transition: all 0.2s;
+  }
+  .tab.active { opacity: 1; border-bottom: 2px solid #f0d070; background: rgba(184,144,42,0.1); color: #f0d070; }
+  .tab:hover { opacity: 0.85; }
+
+  /* PANELS */
+  .panel { display: none; padding: 16px; }
+  .panel.active { display: block; }
+
+  /* STATS */
+  .stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .stat-box { border: 1px solid #5a420a; border-radius: 3px; padding: 10px 8px; text-align: center; background: rgba(184,144,42,0.05); }
+  .stat-num { font-family: 'Cinzel', serif; font-size: 20px; color: #f0d070; font-weight: 700; }
+  .stat-label { font-size: 10px; color: #c4a870; opacity: 0.75; letter-spacing: 0.5px; margin-top: 2px; }
+
+  /* PROGRESS */
+  .progress-wrap { margin-bottom: 12px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 11px; color: #b8902a; margin-bottom: 4px; font-family: 'Cinzel', serif; letter-spacing: 1px; }
+  .progress-bar { height: 6px; background: rgba(184,144,42,0.1); border-radius: 3px; border: 1px solid #5a420a; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #5a420a, #b8902a); transition: width 0.5s ease; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-family: 'Cinzel', serif; font-size: 11px; color: #b8902a;
+    letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: #5a420a; opacity: 0.5; }
+
+  /* FILTERS */
+  .filter-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 10px; }
+  .filter-btn {
+    font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 0.5px;
+    padding: 3px 9px; border: 1px solid #5a420a; background: transparent;
+    color: #b8902a; border-radius: 2px; cursor: pointer; opacity: 0.6; transition: all 0.15s;
+  }
+  .filter-btn.active, .filter-btn:hover { opacity: 1; background: rgba(184,144,42,0.2); }
+
+  /* BOSS GRID */
+  .boss-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+  @media (max-width: 500px) { .boss-grid { grid-template-columns: 1fr; } }
+  .boss-card {
+    border: 1px solid #5a420a; border-radius: 3px; padding: 10px 10px 8px;
+    background: rgba(184,144,42,0.03); transition: border-color 0.15s; position: relative;
+  }
+  .boss-card.has-kc { border-color: #2a5a2a; background: rgba(26,74,26,0.1); }
+  .boss-kc-badge {
+    position: absolute; top: 8px; right: 8px;
+    font-size: 10px; font-family: 'Cinzel', serif; padding: 1px 6px; border-radius: 2px;
+  }
+  .boss-kc-badge.has-kc { background: rgba(26,74,26,0.5); border: 1px solid #2a5a2a; color: #70c870; }
+  .boss-kc-badge.no-kc  { background: rgba(90,66,10,0.4); border: 1px solid #5a420a; color: #b8902a; }
+  .boss-name { font-family: 'Cinzel', serif; font-size: 11px; color: #f0d070; font-weight: 600; margin-bottom: 1px; }
+  .boss-cat  { font-size: 10px; color: #c4a870; opacity: 0.65; margin-bottom: 5px; }
+  .boss-missing { font-size: 10px; color: #c0504a; margin-bottom: 3px; }
+  .boss-drop { display: flex; justify-content: space-between; font-size: 10px; padding: 1px 0; }
+  .boss-drop.obtained { color: #70c870; opacity: 0.7; text-decoration: line-through; }
+  .boss-drop.missing  { color: #c4a870; opacity: 0.55; }
+  .boss-drop-ge { opacity: 0.6; }
+
+  /* ITEM ROWS */
+  .item-row {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    border: 1px solid transparent; border-radius: 3px; margin-bottom: 4px;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .item-row:hover { border-color: #5a420a; background: rgba(184,144,42,0.05); }
+  .item-row.obtained { border-color: rgba(26,74,26,0.3); background: rgba(26,74,26,0.07); }
+  .checkbox {
+    width: 13px; height: 13px; border: 1px solid #5a420a; border-radius: 2px;
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+    font-size: 10px; color: #3a7a3a; background: rgba(0,0,0,0.3);
+  }
+  .checkbox.checked { background: rgba(26,74,26,0.4); border-color: #3a7a3a; }
+  .item-name { font-size: 13px; color: #e8d9b0; flex: 1; }
+  .item-name.obtained-text { color: #c4a870; opacity: 0.5; text-decoration: line-through; }
+  .item-gp { font-size: 11px; color: #b8902a; opacity: 0.7; white-space: nowrap; }
+  .pill {
+    font-size: 9px; font-family: 'Cinzel', serif; padding: 2px 6px;
+    border-radius: 2px; white-space: nowrap;
+  }
+  .pill-gold  { border: 1px solid rgba(184,144,42,0.4); background: rgba(184,144,42,0.12); color: #b8902a; }
+  .pill-green { border: 1px solid rgba(90,138,90,0.4); background: rgba(90,138,90,0.12); color: #70a870; }
+
+  /* TIER LABEL */
+  .tier-label { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; padding: 8px 0 3px; color: #b8902a; opacity: 0.7; margin-top: 4px; }
+
+  /* DIVIDER */
+  .divider { height: 1px; background: #5a420a; opacity: 0.4; margin: 12px 0; }
+
+  /* MONEY CARDS */
+  .money-card {
+    border: 1px solid #5a420a; border-radius: 3px; padding: 10px 12px;
+    background: rgba(184,144,42,0.04); margin-bottom: 6px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .money-left { display: flex; align-items: center; gap: 10px; flex: 1; }
+  .rank-circle {
+    width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center;
+    justify-content: center; font-family: 'Cinzel', serif; font-size: 10px;
+    flex-shrink: 0; font-weight: 700; color: #f0d070;
+  }
+  .money-name { font-family: 'Cinzel', serif; font-size: 11px; color: #f0d070; }
+  .money-sub  { font-size: 10px; color: #c4a870; opacity: 0.7; }
+  .money-right { text-align: right; }
+  .money-gphr { font-family: 'Cinzel', serif; font-size: 13px; color: #f0d070; }
+  .money-missing { font-size: 9px; color: #c0504a; }
+  .money-value   { font-size: 9px; color: #b8902a; opacity: 0.7; }
+
+  /* AI */
+  .ai-box { border: 1px solid #5a420a; border-radius: 3px; padding: 12px; margin-bottom: 10px; background: rgba(0,0,0,0.25); }
+  .ai-ask-row { display: flex; gap: 8px; }
+  .ai-ask-row input[type="text"] { font-size: 13px; }
+  .ai-response-label { font-size: 10px; color: #b8902a; font-family: 'Cinzel', serif; letter-spacing: 1px; margin-bottom: 8px; opacity: 0.7; }
+  .ai-response { font-size: 13px; line-height: 1.7; color: #e8d9b0; white-space: pre-wrap; }
+  .quick-q { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid transparent; border-radius: 3px; margin-bottom: 4px; cursor: pointer; transition: all 0.15s; }
+  .quick-q:hover { border-color: #5a420a; background: rgba(184,144,42,0.05); }
+  .quick-q span { font-size: 12px; color: #c4a870; opacity: 0.8; }
+
+  /* ERROR / LOADING */
+  .error-box { margin: 10px 16px; padding: 12px 14px; color: #e07070; font-family: 'Cinzel', serif; font-size: 12px; border: 1px solid #8b1a1a; border-radius: 3px; background: rgba(139,26,26,0.1); }
+  .spinner {
+    width: 16px; height: 16px; border: 2px solid #5a420a; border-top-color: #b8902a;
+    border-radius: 50%; animation: spin 0.8s linear infinite; display: inline-block; vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .note { font-size: 11px; color: #b8902a; opacity: 0.55; font-style: italic; margin-top: 6px; }
+
+  /* Subtle bg pattern */
+  body::before {
+    content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5 L35 20 L50 20 L38 30 L43 45 L30 35 L17 45 L22 30 L10 20 L25 20Z' fill='none' stroke='%23c8a84b' stroke-width='0.3' opacity='0.05'/%3E%3C/svg%3E") repeat;
+  }
+  #app { position: relative; z-index: 1; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div>
+      <div class="header-title">⚔ OSRS PVM Dashboard</div>
+      <div class="header-sub" id="header-sub">Loading player data...</div>
+    </div>
+    <div class="header-right">
+      <span id="spinner-header" class="spinner" style="display:none"></span>
+      <button class="btn" onclick="refreshPlayer()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div class="input-row">
+    <input type="text" id="rsn-input" value="Southp0le" placeholder="Enter RSN..." onkeydown="if(event.key==='Enter')loadPlayer()"/>
+    <button class="btn" onclick="loadPlayer()">Load Player</button>
+  </div>
+
+  <div id="error-box" class="error-box" style="display:none"></div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('dashboard',this)">Dashboard</button>
+    <button class="tab" onclick="switchTab('collection',this)">Collection</button>
+    <button class="tab" onclick="switchTab('upgrades',this)">Gear</button>
+    <button class="tab" onclick="switchTab('money',this)">GP/hr</button>
+    <button class="tab" onclick="switchTab('advisor',this)">AI Advisor</button>
+  </div>
+
+  <div id="panel-dashboard" class="panel active"></div>
+  <div id="panel-collection" class="panel"></div>
+  <div id="panel-upgrades" class="panel"></div>
+  <div id="panel-money" class="panel"></div>
+  <div id="panel-advisor" class="panel"></div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const WOM_API = "https://api.wiseoldman.net/v2/players";
+
+const BOSS_META = [
+  { id:"zulrah",            name:"Zulrah",             cat:"Slayer Boss", gphr:4,   drops:[{name:"Tanzanite Fang",ge:1800000},{name:"Magic Fang",ge:2000000},{name:"Serpentine Visage",ge:4200000},{name:"Uncut Onyx",ge:2800000}]},
+  { id:"vorkath",           name:"Vorkath",            cat:"Slayer Boss", gphr:5,   drops:[{name:"Draconic Visage",ge:4000000},{name:"Skeletal Visage",ge:8000000},{name:"Vorkath's Head",ge:350000}]},
+  { id:"alchemical_hydra",  name:"Alch. Hydra",        cat:"Slayer Boss", gphr:4,   drops:[{name:"Hydra's Eye",ge:900000},{name:"Hydra's Fang",ge:1200000},{name:"Hydra's Heart",ge:1100000},{name:"Hydra Leather",ge:3800000},{name:"Brimstone Ring",ge:3500000}]},
+  { id:"cerberus",          name:"Cerberus",           cat:"Slayer Boss", gphr:3.5, drops:[{name:"Primordial Crystal",ge:22000000},{name:"Pegasian Crystal",ge:14000000},{name:"Eternal Crystal",ge:22000000},{name:"Smouldering Stone",ge:2000000}]},
+  { id:"thermonuclear_smoke_devil", name:"Smoke Devil",cat:"Slayer Boss", gphr:2,   drops:[{name:"Occult Necklace",ge:600000},{name:"Smoke Battlestaff",ge:1400000}]},
+  { id:"kraken",            name:"Kraken",             cat:"Slayer Boss", gphr:2,   drops:[{name:"Kraken Tentacle",ge:800000},{name:"Trident of the Seas",ge:1100000},{name:"Pet Kraken",ge:0}]},
+  { id:"general_graardor",  name:"General Graardor",   cat:"God Wars",   gphr:3,   drops:[{name:"Bandos Chestplate",ge:18000000},{name:"Bandos Tassets",ge:35000000},{name:"Bandos Boots",ge:280000},{name:"Bandos Hilt",ge:7000000}]},
+  { id:"kreearra",          name:"Kree'arra",          cat:"God Wars",   gphr:3,   drops:[{name:"Armadyl Helmet",ge:5000000},{name:"Armadyl Chestplate",ge:30000000},{name:"Armadyl Chainskirt",ge:22000000},{name:"Armadyl Hilt",ge:5000000}]},
+  { id:"commander_zilyana", name:"Commander Zilyana",  cat:"God Wars",   gphr:2.5, drops:[{name:"Saradomin Sword",ge:6000000},{name:"Armadyl Crossbow",ge:9000000},{name:"Saradomin Hilt",ge:3000000}]},
+  { id:"kril_tsutsaroth",   name:"K'ril Tsutsaroth",  cat:"God Wars",   gphr:2.5, drops:[{name:"Zamorakian Spear",ge:11000000},{name:"Staff of the Dead",ge:6000000},{name:"Zamorak Hilt",ge:3500000}]},
+  { id:"nex",               name:"Nex",                cat:"God Wars",   gphr:6,   drops:[{name:"Torva Full Helm",ge:55000000},{name:"Torva Platebody",ge:100000000},{name:"Torva Platelegs",ge:70000000},{name:"Zaryte Vambraces",ge:12000000},{name:"Nihil Horn",ge:4000000}]},
+  { id:"chambers_of_xeric", name:"Chambers of Xeric", cat:"Raids",      gphr:8,   drops:[{name:"Twisted Bow",ge:1500000000},{name:"Ancestral Hat",ge:25000000},{name:"Ancestral Robe Top",ge:75000000},{name:"Ancestral Robe Bottom",ge:55000000},{name:"Dragon Claws",ge:60000000},{name:"Kodai Insignia",ge:70000000},{name:"Elder Maul",ge:35000000}]},
+  { id:"theatre_of_blood",  name:"Theatre of Blood",  cat:"Raids",      gphr:9,   drops:[{name:"Scythe of Vitur",ge:800000000},{name:"Ghrazi Rapier",ge:80000000},{name:"Sanguinesti Staff",ge:100000000},{name:"Justiciar Faceguard",ge:4000000},{name:"Justiciar Leggings",ge:5000000},{name:"Justiciar Chestguard",ge:5000000}]},
+  { id:"tombs_of_amascut",  name:"Tombs of Amascut",  cat:"Raids",      gphr:10,  drops:[{name:"Tumeken's Shadow",ge:800000000},{name:"Osmumten's Fang",ge:70000000},{name:"Masori Mask",ge:15000000},{name:"Masori Body",ge:50000000},{name:"Masori Chaps",ge:30000000},{name:"Elidinis' Ward",ge:200000000}]},
+  { id:"duke_sucellus",     name:"Duke Sucellus",     cat:"DT2 Bosses", gphr:3,   drops:[{name:"Bellator Vestige",ge:80000000},{name:"Awakener's Orb",ge:3000000},{name:"Chromium Ingot",ge:1500000}]},
+  { id:"the_leviathan",     name:"The Leviathan",     cat:"DT2 Bosses", gphr:3.5, drops:[{name:"Venator Vestige",ge:200000000},{name:"Awakener's Orb",ge:3000000}]},
+  { id:"the_whisperer",     name:"The Whisperer",     cat:"DT2 Bosses", gphr:3,   drops:[{name:"Magus Vestige",ge:100000000},{name:"Awakener's Orb",ge:3000000}]},
+  { id:"vardorvis",         name:"Vardorvis",         cat:"DT2 Bosses", gphr:4,   drops:[{name:"Ultor Vestige",ge:150000000},{name:"Awakener's Orb",ge:3000000},{name:"Chromium Ingot",ge:1500000}]},
+  { id:"phantom_muspah",    name:"Phantom Muspah",    cat:"End-Game",   gphr:4,   drops:[{name:"Saturated Heart",ge:50000000},{name:"Ancient Shard",ge:600000}]},
+  { id:"corporeal_beast",   name:"Corporeal Beast",   cat:"End-Game",   gphr:2,   drops:[{name:"Elysian Sigil",ge:700000000},{name:"Arcane Sigil",ge:50000000},{name:"Spectral Sigil",ge:12000000}]},
+  { id:"corrupt_gauntlet",  name:"Corrupted Gauntlet",cat:"End-Game",   gphr:5,   drops:[{name:"Enhanced Crystal Weapon Seed",ge:90000000},{name:"Crystal Armour Seed",ge:700000},{name:"Youngllef",ge:0}]},
+  { id:"araxxor",           name:"Araxxor",           cat:"End-Game",   gphr:5,   drops:[{name:"Araxyte Fang",ge:80000000},{name:"Noxious Pommel",ge:60000000},{name:"Araxyte Head",ge:5000000}]},
+];
+
+const GEAR_UPGRADES = [
+  {name:"Occult Necklace",       slot:"Neck",      source:"Smoke Devil",         ge:600000,     priority:1},
+  {name:"Serpentine Helm",       slot:"Head",      source:"Zulrah",              ge:4200000,    priority:1},
+  {name:"Toxic Blowpipe",        slot:"2H Ranged", source:"Zulrah",              ge:1200000,    priority:1},
+  {name:"Bandos Chestplate",     slot:"Body",      source:"Bandos",              ge:18000000,   priority:1},
+  {name:"Bandos Tassets",        slot:"Legs",      source:"Bandos",              ge:35000000,   priority:1},
+  {name:"Primordial Boots",      slot:"Feet",      source:"Cerberus",            ge:28000000,   priority:1},
+  {name:"Pegasian Boots",        slot:"Feet",      source:"Cerberus",            ge:18000000,   priority:1},
+  {name:"Eternal Boots",         slot:"Feet",      source:"Cerberus",            ge:28000000,   priority:1},
+  {name:"Armadyl Helmet",        slot:"Head",      source:"Kree'arra",           ge:5000000,    priority:1},
+  {name:"Armadyl Chestplate",    slot:"Body",      source:"Kree'arra",           ge:30000000,   priority:1},
+  {name:"Armadyl Chainskirt",    slot:"Legs",      source:"Kree'arra",           ge:22000000,   priority:1},
+  {name:"Osmumten's Fang",       slot:"Weapon",    source:"ToA",                 ge:70000000,   priority:2},
+  {name:"Ghrazi Rapier",         slot:"Weapon",    source:"ToB",                 ge:80000000,   priority:2},
+  {name:"Ancestral Hat",         slot:"Head",      source:"CoX",                 ge:25000000,   priority:2},
+  {name:"Ancestral Robe Top",    slot:"Body",      source:"CoX",                 ge:75000000,   priority:2},
+  {name:"Ancestral Robe Bottom", slot:"Legs",      source:"CoX",                 ge:55000000,   priority:2},
+  {name:"Masori Mask",           slot:"Head",      source:"ToA",                 ge:15000000,   priority:2},
+  {name:"Masori Body",           slot:"Body",      source:"ToA",                 ge:50000000,   priority:2},
+  {name:"Masori Chaps",          slot:"Legs",      source:"ToA",                 ge:30000000,   priority:2},
+  {name:"Twisted Bow",           slot:"2H Ranged", source:"CoX",                 ge:1500000000, priority:2},
+  {name:"Scythe of Vitur",       slot:"2H Melee",  source:"ToB",                 ge:800000000,  priority:2},
+  {name:"Tumeken's Shadow",      slot:"2H Magic",  source:"ToA",                 ge:800000000,  priority:2},
+  {name:"Saturated Heart",       slot:"Pocket",    source:"Phantom Muspah",      ge:50000000,   priority:3},
+  {name:"Ultor Ring",            slot:"Ring",      source:"DT2 (Vardorvis)",     ge:155000000,  priority:3},
+  {name:"Venator Ring",          slot:"Ring",      source:"DT2 (Leviathan)",     ge:210000000,  priority:3},
+  {name:"Magus Ring",            slot:"Ring",      source:"DT2 (Whisperer)",     ge:105000000,  priority:3},
+  {name:"Bellator Ring",         slot:"Ring",      source:"DT2 (Duke)",          ge:85000000,   priority:3},
+  {name:"Torva Full Helm",       slot:"Head",      source:"Nex",                 ge:55000000,   priority:3},
+  {name:"Torva Platebody",       slot:"Body",      source:"Nex",                 ge:100000000,  priority:3},
+  {name:"Torva Platelegs",       slot:"Legs",      source:"Nex",                 ge:70000000,   priority:3},
+  {name:"Zaryte Vambraces",      slot:"Hands",     source:"Nex",                 ge:12000000,   priority:3},
+  {name:"Enhanced Crystal Weapon Seed",slot:"Weapon",source:"Corrupted Gauntlet",ge:90000000,  priority:3},
+  {name:"Elidinis' Ward",        slot:"Shield",    source:"ToA",                 ge:200000000,  priority:3},
+];
+
+const CATS = ["All","Slayer Boss","God Wars","Raids","DT2 Bosses","End-Game"];
+const QUICK_QS = [
+  "What's my best GP/hr boss right now and why?",
+  "Which missing drops should I prioritize buying vs farming?",
+  "Build me a weekly bossing schedule to maximize income",
+  "What boss should I focus on for collection log completion?",
+  "How many hours will it take to afford my missing BIS gear?",
+];
+
+// ── STATE ─────────────────────────────────────────────────────────────────────
+function store(k,v){ if(v===undefined){try{return JSON.parse(localStorage.getItem(k)||"null")}catch{return null}}try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+
+let playerData  = null;
+let catFilter   = "All";
+let obtained    = store("osrs_obtained") || {};
+let gearObtained= store("osrs_gear")     || {};
+let aiQuery     = "";
+let lastUpdated = null;
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function fmt(n){ return n>=1e9?(n/1e9).toFixed(2)+"B":n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(0)+"K":String(n); }
+function fmtKc(n){ return n<=0?"—":n.toLocaleString(); }
+function getKc(id){ const b=playerData?.latestSnapshot?.data?.bosses; if(!b)return 0; const v=b[id]?.kills??-1; return v<=0?0:v; }
+
+// ── FETCH ─────────────────────────────────────────────────────────────────────
+async function fetchPlayer(name){
+  if(!name)return;
+  document.getElementById("spinner-header").style.display="inline-block";
+  document.getElementById("error-box").style.display="none";
+  try{
+    // POST to update, ignore failures (player may not be registered)
+    await fetch(`${WOM_API}/${encodeURIComponent(name)}`,{method:"POST"}).catch(()=>{});
+    const res = await fetch(`${WOM_API}/${encodeURIComponent(name)}`);
+    if(!res.ok) throw new Error(`Player "${name}" not found on Wise Old Man. Make sure they have been looked up there at least once.`);
+    playerData = await res.json();
+    lastUpdated = new Date();
+    store("osrs_username", name);
+    document.getElementById("header-sub").textContent =
+      `${playerData.displayName} · ${(playerData.type||"main").toUpperCase()} · EHB: ${Math.round(playerData.ehb||0)} · Updated ${lastUpdated.toLocaleTimeString()}`;
+    renderAll();
+  } catch(e){
+    const eb = document.getElementById("error-box");
+    eb.textContent = "⚠ " + e.message;
+    eb.style.display = "block";
+  } finally {
+    document.getElementById("spinner-header").style.display="none";
+  }
+}
+
+function loadPlayer(){ fetchPlayer(document.getElementById("rsn-input").value.trim()); }
+function refreshPlayer(){ fetchPlayer(document.getElementById("rsn-input").value.trim()); }
+
+// ── TAB SWITCHING ─────────────────────────────────────────────────────────────
+function switchTab(tab, btn){
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  if(btn) btn.classList.add("active");
+  else document.querySelectorAll(".tab")[["dashboard","collection","upgrades","money","advisor"].indexOf(tab)]?.classList.add("active");
+  document.getElementById("panel-"+tab).classList.add("active");
+}
+
+// ── RENDER ALL ────────────────────────────────────────────────────────────────
+function renderAll(){ renderDashboard(); renderCollection(); renderGear(); renderMoney(); renderAdvisor(); }
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────────
+function renderDashboard(){
+  const totalDrops   = BOSS_META.reduce((s,b)=>s+b.drops.length,0);
+  const obtainedDrops= BOSS_META.reduce((s,b)=>s+b.drops.filter(d=>obtained[b.id+":"+d.name]).length,0);
+  const gearDone     = GEAR_UPGRADES.filter(g=>gearObtained[g.name]).length;
+  const bossesWithKc = BOSS_META.filter(b=>getKc(b.id)>0).length;
+  const totalKc      = BOSS_META.reduce((s,b)=>s+getKc(b.id),0);
+  const pct          = Math.round(obtainedDrops/totalDrops*100);
+  const gearPct      = Math.round(gearDone/GEAR_UPGRADES.length*100);
+
+  const filtered = catFilter==="All"?BOSS_META:BOSS_META.filter(b=>b.cat===catFilter);
+
+  let html = `
+  <div class="stat-grid">
+    <div class="stat-box"><div class="stat-num">${bossesWithKc}</div><div class="stat-label">Bosses Done</div></div>
+    <div class="stat-box"><div class="stat-num">${totalKc.toLocaleString()}</div><div class="stat-label">Total KC</div></div>
+    <div class="stat-box"><div class="stat-num">${obtainedDrops}/${totalDrops}</div><div class="stat-label">Drops Got</div></div>
+    <div class="stat-box"><div class="stat-num">${gearDone}/${GEAR_UPGRADES.length}</div><div class="stat-label">Gear BIS</div></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Collection Log Progress</span><span>${pct}%</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+  </div>
+  <div class="progress-wrap">
+    <div class="progress-label"><span>BIS Gear Progress</span><span>${gearPct}%</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${gearPct}%"></div></div>
+  </div>
+  <div class="filter-row">
+    ${CATS.map(c=>`<button class="filter-btn${catFilter===c?" active":""}" onclick="setCat('${c}')">${c}</button>`).join("")}
+  </div>
+  <div class="boss-grid">
+    ${filtered.map(b=>{
+      const kc = getKc(b.id);
+      const missingCount = b.drops.filter(d=>!obtained[b.id+":"+d.name]).length;
+      return `<div class="boss-card${kc>0?" has-kc":""}">
+        <span class="boss-kc-badge ${kc>0?"has-kc":"no-kc"}">${kc>0?fmtKc(kc)+" KC":"0 KC"}</span>
+        <div class="boss-name">${b.name}</div>
+        <div class="boss-cat">${b.cat} · ~${b.gphr}M GP/hr</div>
+        ${missingCount>0?`<div class="boss-missing">${missingCount} drop${missingCount>1?"s":""} missing</div>`:""}
+        <div>${b.drops.map(d=>`<div class="boss-drop ${obtained[b.id+":"+d.name]?"obtained":"missing"}">
+          <span>${obtained[b.id+":"+d.name]?"✓ ":""}${d.name}</span>
+          ${d.ge>0?`<span class="boss-drop-ge">${fmt(d.ge)}</span>`:""}
+        </div>`).join("")}</div>
+      </div>`;
+    }).join("")}
+  </div>
+  <p class="note" style="margin-top:8px">Drops update from Wise Old Man API · Click Collection tab to mark drops obtained</p>`;
+  document.getElementById("panel-dashboard").innerHTML = html;
+}
+
+function setCat(c){ catFilter=c; renderDashboard(); }
+
+// ── COLLECTION ────────────────────────────────────────────────────────────────
+function renderCollection(){
+  const totalDrops    = BOSS_META.reduce((s,b)=>s+b.drops.length,0);
+  const obtainedDrops = BOSS_META.reduce((s,b)=>s+b.drops.filter(d=>obtained[b.id+":"+d.name]).length,0);
+  const pct = Math.round(obtainedDrops/totalDrops*100);
+
+  let html = `
+  <div class="progress-wrap">
+    <div class="progress-label"><span>Collection Log — Key Uniques</span><span>${obtainedDrops} / ${totalDrops}</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+  </div>`;
+
+  CATS.slice(1).forEach(cat=>{
+    html += `<div class="tier-label">${cat}</div>`;
+    BOSS_META.filter(b=>b.cat===cat).forEach(b=>{
+      const kc=getKc(b.id);
+      html += `<div style="font-family:'Cinzel',serif;font-size:11px;color:#b8902a;padding:4px 0 2px;opacity:0.85">${b.name} <span style="opacity:0.5">(${fmtKc(kc)} KC)</span></div>`;
+      b.drops.forEach(d=>{
+        const key=b.id+":"+d.name;
+        const have=!!obtained[key];
+        html += `<div class="item-row${have?" obtained":""}" onclick="toggleObtained('${key}')">
+          <div class="checkbox${have?" checked":""}">${have?"✓":""}</div>
+          <span class="item-name${have?" obtained-text":""}">${d.name}</span>
+          ${d.ge>0?`<span class="item-gp">${fmt(d.ge)}</span>`:""}
+          <span class="pill pill-gold">${b.name}</span>
+        </div>`;
+      });
+    });
+    html += `<div class="divider"></div>`;
+  });
+  html += `<p class="note">Click any row to mark as obtained · Progress saves automatically</p>`;
+  document.getElementById("panel-collection").innerHTML = html;
+}
+
+function toggleObtained(key){
+  obtained[key]=!obtained[key];
+  store("osrs_obtained",obtained);
+  renderAll();
+}
+
+// ── GEAR ──────────────────────────────────────────────────────────────────────
+function renderGear(){
+  const gearDone = GEAR_UPGRADES.filter(g=>gearObtained[g.name]).length;
+  const pct = Math.round(gearDone/GEAR_UPGRADES.length*100);
+  const missingVal = GEAR_UPGRADES.filter(g=>!gearObtained[g.name]).reduce((s,g)=>s+g.ge,0);
+
+  let html = `
+  <div class="progress-wrap">
+    <div class="progress-label"><span>BIS Gear Completion</span><span>${gearDone} / ${GEAR_UPGRADES.length}</span></div>
+    <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+  </div>
+  <p style="font-size:11px;color:#b8902a;opacity:0.6;margin-bottom:12px;font-style:italic">Total missing gear value: ~${fmt(missingVal)} GP</p>`;
+
+  [{t:1,l:"Core Upgrades"},{t:2,l:"Raid Upgrades"},{t:3,l:"End-Game BIS"}].forEach(({t,l})=>{
+    html += `<div class="tier-label">${l}</div>`;
+    GEAR_UPGRADES.filter(g=>g.priority===t).forEach(g=>{
+      const have=!!gearObtained[g.name];
+      html += `<div class="item-row${have?" obtained":""}" onclick="toggleGear('${g.name.replace(/'/g,"\\'")}')">
+        <div class="checkbox${have?" checked":""}">${have?"✓":""}</div>
+        <span class="item-name${have?" obtained-text":""}">${g.name}</span>
+        <span class="pill pill-green">${g.slot}</span>
+        <span class="item-gp">${fmt(g.ge)}</span>
+      </div>`;
+    });
+  });
+  html += `<p class="note" style="margin-top:6px">Click any item to toggle obtained · Saves automatically</p>`;
+  document.getElementById("panel-upgrades").innerHTML = html;
+}
+
+function toggleGear(name){
+  gearObtained[name]=!gearObtained[name];
+  store("osrs_gear",gearObtained);
+  renderAll();
+}
+
+// ── MONEY ──────────────────────────────────────────────────────────────────────
+function renderMoney(){
+  const ranked = [...BOSS_META].map(b=>{
+    const kc=getKc(b.id);
+    const missing=b.drops.filter(d=>!obtained[b.id+":"+d.name]);
+    const missingVal=missing.reduce((s,d)=>s+d.ge,0);
+    return {...b,kc,missing,missingVal,score:b.gphr*(missingVal>0?1.5:1)};
+  }).sort((a,b)=>b.score-a.score);
+
+  const rankColors=["#b8a020","#707070","#8a4020"];
+
+  let html = `
+  <div class="section-title">GP/hr Priority</div>
+  <p style="font-size:11px;color:#b8902a;opacity:0.6;margin-bottom:12px;font-style:italic">Bosses with missing drops weighted higher. All rates assume BIS gear (Tbow / Scythe / Shadow).</p>`;
+
+  ranked.forEach((b,i)=>{
+    const rc = i<3?rankColors[i]:"rgba(90,66,10,0.5)";
+    html += `<div class="money-card">
+      <div class="money-left">
+        <div class="rank-circle" style="background:${rc}">${i+1}</div>
+        <div>
+          <div class="money-name">${b.name}</div>
+          <div class="money-sub">${b.kc>0?fmtKc(b.kc)+" KC · ":"No KC · "}${b.cat}</div>
+        </div>
+      </div>
+      <div class="money-right">
+        <div class="money-gphr">~${b.gphr}M/hr</div>
+        ${b.missing.length>0?`<div class="money-missing">${b.missing.length} unique${b.missing.length>1?"s":""} missing</div>`:""}
+        ${b.missingVal>0?`<div class="money-value">${fmt(b.missingVal)} in drops</div>`:""}
+      </div>
+    </div>`;
+  });
+  document.getElementById("panel-money").innerHTML = html;
+}
+
+// ── AI ADVISOR ────────────────────────────────────────────────────────────────
+function renderAdvisor(){
+  let html = `
+  <div class="section-title">AI Advisor — Powered by Claude</div>
+  <p style="font-size:12px;color:#b8902a;opacity:0.6;margin-bottom:12px;font-style:italic">Your KC, missing drops, and gear are passed to Claude automatically.</p>
+  <div class="ai-box">
+    <div class="ai-ask-row">
+      <input type="text" id="ai-input" placeholder="e.g. What should I farm to maximize GP this week?" value="${aiQuery.replace(/"/g,'&quot;')}" onkeydown="if(event.key==='Enter')askAI()"/>
+      <button class="btn" id="ask-btn" onclick="askAI()">Ask ↗</button>
+    </div>
+  </div>
+  <div id="ai-response-box"></div>
+  <div class="section-title" style="margin-top:12px">Quick Questions</div>
+  ${QUICK_QS.map(q=>`<div class="quick-q" onclick="setAiQuery('${q.replace(/'/g,"\\'")}')"><span>→ ${q}</span></div>`).join("")}`;
+  document.getElementById("panel-advisor").innerHTML = html;
+}
+
+function setAiQuery(q){
+  aiQuery = q;
+  const inp = document.getElementById("ai-input");
+  if(inp) inp.value = q;
+}
+
+async function askAI(){
+  const inp = document.getElementById("ai-input");
+  const q = inp ? inp.value.trim() : aiQuery;
+  if(!q) return;
+  aiQuery = q;
+
+  const btn = document.getElementById("ask-btn");
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spinner"></span>'; }
+
+  const kcSummary      = BOSS_META.map(b=>`${b.name}: ${getKc(b.id)} KC`).join(", ");
+  const missingDrops   = BOSS_META.flatMap(b=>b.drops.filter(d=>!obtained[b.id+":"+d.name]).map(d=>`${d.name} (${b.name}, ~${fmt(d.ge)} GP)`)).join(", ");
+  const missingGearStr = GEAR_UPGRADES.filter(g=>!gearObtained[g.name]).map(g=>`${g.name} (~${fmt(g.ge)} GP)`).join(", ");
+  const rsn = document.getElementById("rsn-input")?.value || "Southp0le";
+
+  try{
+    const res = await fetch("https://api.anthropic.com/v1/messages",{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        model:"claude-sonnet-4-20250514",
+        max_tokens:1000,
+        system:`You are an expert Old School RuneScape advisor for a maxed main account named "${rsn}".
+The player already owns a Twisted Bow, Scythe of Vitur, and Tumeken's Shadow.
+Current boss kill counts: ${kcSummary}.
+Missing collection log drops: ${missingDrops||"None"}.
+Missing gear upgrades: ${missingGearStr||"None"}.
+Give direct, concise, actionable OSRS advice. Use GP values to justify recommendations. Be specific about kill counts, rates, and GP/hr. Keep responses under 300 words. No fluff. Use plain text, no markdown.`,
+        messages:[{role:"user",content:q}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || "No response received.";
+    const box = document.getElementById("ai-response-box");
+    if(box) box.innerHTML = `<div class="ai-box"><div class="ai-response-label">Advisor Response</div><div class="ai-response">${text.replace(/</g,"&lt;")}</div></div>`;
+  } catch(e){
+    const box = document.getElementById("ai-response-box");
+    if(box) box.innerHTML = `<div class="ai-box"><div class="ai-response" style="color:#c0504a">Error reaching AI. Please try again.</div></div>`;
+  } finally {
+    if(btn){ btn.disabled=false; btn.innerHTML="Ask ↗"; }
+  }
+}
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+const savedRsn = store("osrs_username");
+if(savedRsn){ document.getElementById("rsn-input").value = savedRsn; }
+renderAll();
+fetchPlayer(document.getElementById("rsn-input").value || "Southp0le");
+</script>
+</body>
+</html>
