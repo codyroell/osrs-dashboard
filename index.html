@@ -3,466 +3,650 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Southp0le — OSRS PVM Dashboard</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<title>OSRS Dashboard</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:wght@400;500;600&display=swap" rel="stylesheet"/>
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  html, body { height: 100%; }
-  :root {
-    --ice-bg:#040d18; --ice-bg2:#071525; --ice-bg3:#0a1e30;
-    --ice-border:#1a4a6a; --ice-border2:#2a6a9a;
-    --ice-accent:#7ec8e3; --ice-bright:#b8ecff; --ice-dim:#4a8aaa; --ice-muted:#2a5a7a;
-    --ice-text:#d0eeff; --ice-text2:#8ac4e0;
-    --ice-frost:rgba(126,200,227,0.07); --ice-frost2:rgba(126,200,227,0.14);
-    --ice-green:#50c878; --ice-green-bg:rgba(30,100,60,0.18);
-    --ice-red:#e07070; --ice-red-bg:rgba(139,26,26,0.18);
-    --ice-purple:#b090d8; --ice-gold:#d4a843;
-  }
-  body { font-family:'Crimson Pro',Georgia,serif; background:var(--ice-bg); min-height:100vh; color:var(--ice-text); overflow-x:hidden; }
-  body::before { content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
-    background: radial-gradient(ellipse at 15% 15%,rgba(126,200,227,0.05) 0%,transparent 55%),
-      radial-gradient(ellipse at 85% 85%,rgba(100,160,220,0.04) 0%,transparent 55%),
-      url("data:image/svg+xml,%3Csvg width='80' height='80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%237ec8e3' stroke-width='0.35' opacity='0.055'%3E%3Cpolygon points='40,4 54,19 54,35 40,45 26,35 26,19'/%3E%3Cline x1='40' y1='4' x2='40' y2='45'/%3E%3Cline x1='26' y1='19' x2='54' y2='35'/%3E%3Cline x1='54' y1='19' x2='26' y2='35'/%3E%3C/g%3E%3C/svg%3E") repeat; }
-  #app { max-width:960px; margin:0 auto; padding:0 0 60px; position:relative; z-index:1; }
-
-  .header { border-bottom:2px solid var(--ice-border2); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; background:linear-gradient(90deg,rgba(4,13,24,0.96),rgba(7,21,37,0.96)); position:sticky; top:0; z-index:10; backdrop-filter:blur(8px); box-shadow:0 2px 20px rgba(126,200,227,0.08); }
-  .header-left { display:flex; align-items:center; gap:12px; }
-  .header-crown { font-size:26px; filter:drop-shadow(0 0 8px rgba(126,200,227,0.7)); }
-  .header-title { font-family:'Cinzel',serif; font-size:20px; font-weight:700; color:var(--ice-bright); letter-spacing:3px; text-transform:uppercase; text-shadow:0 0 18px rgba(126,200,227,0.5); }
-  .header-sub { font-size:11px; color:var(--ice-dim); letter-spacing:1px; font-family:'Cinzel',serif; margin-top:3px; }
-  .header-right { display:flex; align-items:center; gap:8px; }
-
-  .welcome-banner { margin:10px 16px 0; padding:9px 14px; border:1px solid var(--ice-border2); border-radius:3px; background:linear-gradient(90deg,rgba(126,200,227,0.06),rgba(126,200,227,0.02)); font-family:'Cinzel',serif; font-size:11px; color:var(--ice-text2); letter-spacing:0.5px; text-align:center; }
-  .welcome-banner strong { color:var(--ice-bright); font-size:13px; text-shadow:0 0 10px rgba(126,200,227,0.4); }
-
-  .input-row { display:flex; gap:8px; padding:10px 16px 0; }
-  input[type="text"] { flex:1; background:rgba(4,13,24,0.75); border:1px solid var(--ice-border); border-radius:3px; padding:8px 12px; color:var(--ice-text); font-family:'Crimson Pro',Georgia,serif; font-size:14px; outline:none; transition:border-color 0.2s,box-shadow 0.2s; }
-  input[type="text"]:focus { border-color:var(--ice-accent); box-shadow:0 0 8px rgba(126,200,227,0.18); }
-  .btn { font-family:'Cinzel',serif; font-size:10px; letter-spacing:1px; padding:8px 16px; border:1px solid var(--ice-border2); background:var(--ice-frost2); color:var(--ice-bright); border-radius:3px; cursor:pointer; transition:all 0.2s; text-transform:uppercase; white-space:nowrap; }
-  .btn:hover { background:rgba(126,200,227,0.24); box-shadow:0 0 10px rgba(126,200,227,0.25); }
-  .btn:disabled { opacity:0.4; cursor:default; }
-
-  .tabs { display:flex; border-bottom:1px solid var(--ice-border); background:rgba(4,13,24,0.65); margin-top:10px; overflow-x:auto; }
-  .tab { font-family:'Cinzel',serif; font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:11px 0; cursor:pointer; border:none; flex:1; min-width:68px; background:transparent; color:var(--ice-dim); border-bottom:2px solid transparent; opacity:0.55; transition:all 0.2s; }
-  .tab.active { opacity:1; border-bottom:2px solid var(--ice-accent); background:var(--ice-frost); color:var(--ice-bright); }
-  .tab:hover { opacity:0.85; color:var(--ice-accent); }
-  .panel { display:none; padding:16px; }
-  .panel.active { display:block; }
-
-  .stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:12px; }
-  @media(max-width:500px){ .stat-grid{grid-template-columns:repeat(2,1fr);} }
-  .stat-box { border:1px solid var(--ice-border); border-radius:3px; padding:10px 8px; text-align:center; background:var(--ice-frost); }
-  .stat-num { font-family:'Cinzel',serif; font-size:18px; color:var(--ice-bright); font-weight:700; text-shadow:0 0 10px rgba(126,200,227,0.35); }
-  .stat-label { font-size:10px; color:var(--ice-dim); letter-spacing:0.5px; margin-top:2px; }
-
-  .progress-wrap { margin-bottom:9px; }
-  .progress-label { display:flex; justify-content:space-between; font-size:11px; color:var(--ice-accent); margin-bottom:4px; font-family:'Cinzel',serif; letter-spacing:1px; }
-  .progress-bar { height:5px; background:rgba(126,200,227,0.07); border-radius:3px; border:1px solid var(--ice-border); overflow:hidden; }
-  .progress-fill { height:100%; background:linear-gradient(90deg,var(--ice-muted),var(--ice-accent),var(--ice-bright)); transition:width 0.6s ease; box-shadow:0 0 5px rgba(126,200,227,0.35); }
-
-  .section-title { font-family:'Cinzel',serif; font-size:11px; color:var(--ice-accent); letter-spacing:2px; text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; gap:8px; }
-  .section-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,var(--ice-border),transparent); }
-
-  .filter-row { display:flex; gap:5px; flex-wrap:wrap; margin-bottom:10px; }
-  .filter-btn { font-family:'Cinzel',serif; font-size:9px; letter-spacing:0.5px; padding:3px 9px; border:1px solid var(--ice-border); background:transparent; color:var(--ice-dim); border-radius:2px; cursor:pointer; opacity:0.6; transition:all 0.15s; }
-  .filter-btn.active,.filter-btn:hover { opacity:1; background:var(--ice-frost2); border-color:var(--ice-accent); color:var(--ice-accent); }
-
-  .boss-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; }
-  @media(max-width:520px){ .boss-grid{grid-template-columns:1fr;} }
-  .boss-card { border:1px solid var(--ice-border); border-radius:3px; padding:10px 10px 8px; background:rgba(7,21,37,0.55); transition:all 0.15s; position:relative; }
-  .boss-card:hover { border-color:var(--ice-border2); }
-  .boss-card.has-kc { border-color:#1a5a3a; background:rgba(10,36,24,0.35); }
-  .boss-kc-badge { position:absolute; top:8px; right:8px; font-size:10px; font-family:'Cinzel',serif; padding:1px 6px; border-radius:2px; }
-  .boss-kc-badge.has-kc { background:rgba(20,80,50,0.55); border:1px solid #1a5a3a; color:var(--ice-green); }
-  .boss-kc-badge.no-kc  { background:rgba(10,30,50,0.45); border:1px solid var(--ice-border); color:var(--ice-dim); }
-  .boss-name { font-family:'Cinzel',serif; font-size:11px; color:var(--ice-bright); font-weight:600; margin-bottom:1px; padding-right:62px; }
-  .boss-cat  { font-size:10px; color:var(--ice-text2); opacity:0.65; margin-bottom:5px; }
-  .boss-missing { font-size:10px; color:var(--ice-red); margin-bottom:3px; }
-  .boss-drop { display:flex; justify-content:space-between; font-size:10px; padding:1px 0; gap:4px; }
-  .boss-drop.obtained { color:var(--ice-green); opacity:0.75; text-decoration:line-through; }
-  .boss-drop.missing  { color:var(--ice-text2); opacity:0.5; }
-  .boss-drop.pet { color:var(--ice-purple); opacity:0.5; }
-  .boss-drop.pet.obtained { color:var(--ice-purple); opacity:0.8; text-decoration:line-through; }
-  .boss-drop-ge { opacity:0.5; white-space:nowrap; }
-
-  .item-row { display:flex; align-items:center; gap:10px; padding:7px 10px; border:1px solid transparent; border-radius:3px; margin-bottom:3px; cursor:pointer; transition:all 0.15s; }
-  .item-row:hover { border-color:var(--ice-border); background:var(--ice-frost); }
-  .item-row.obtained { border-color:rgba(26,90,58,0.3); background:var(--ice-green-bg); }
-  .checkbox { width:13px; height:13px; border:1px solid var(--ice-border); border-radius:2px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--ice-green); background:rgba(4,13,24,0.6); }
-  .checkbox.checked { background:rgba(20,80,50,0.4); border-color:#1a6a3a; }
-  .checkbox.pet-check { border-color:#4a2a7a; color:var(--ice-purple); }
-  .checkbox.pet-check.checked { background:rgba(50,20,90,0.4); border-color:var(--ice-purple); }
-  .item-name { font-size:13px; color:var(--ice-text); flex:1; }
-  .item-name.obtained-text { color:var(--ice-text2); opacity:0.4; text-decoration:line-through; }
-  .item-name.pet-name { color:var(--ice-purple); }
-  .item-gp { font-size:11px; color:var(--ice-gold); opacity:0.75; white-space:nowrap; }
-  .pill { font-size:9px; font-family:'Cinzel',serif; padding:2px 6px; border-radius:2px; white-space:nowrap; }
-  .pill-ice    { border:1px solid rgba(126,200,227,0.3); background:rgba(126,200,227,0.08); color:var(--ice-accent); }
-  .pill-green  { border:1px solid rgba(80,200,120,0.3); background:rgba(80,200,120,0.08); color:var(--ice-green); }
-  .pill-purple { border:1px solid rgba(176,144,216,0.3); background:rgba(176,144,216,0.08); color:var(--ice-purple); }
-  .pill-gold   { border:1px solid rgba(212,168,67,0.3); background:rgba(212,168,67,0.08); color:var(--ice-gold); }
-
-  .tier-label { font-family:'Cinzel',serif; font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:8px 0 3px; color:var(--ice-accent); opacity:0.7; margin-top:4px; }
-  .divider { height:1px; background:linear-gradient(90deg,var(--ice-border),transparent); margin:10px 0; }
-
-  .money-card { border:1px solid var(--ice-border); border-radius:3px; padding:10px 12px; background:rgba(7,21,37,0.45); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; transition:all 0.15s; }
-  .money-card:hover { border-color:var(--ice-border2); }
-  .money-left { display:flex; align-items:center; gap:10px; flex:1; }
-  .rank-circle { width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Cinzel',serif; font-size:10px; flex-shrink:0; font-weight:700; }
-  .money-name { font-family:'Cinzel',serif; font-size:11px; color:var(--ice-bright); }
-  .money-sub  { font-size:10px; color:var(--ice-text2); opacity:0.7; }
-  .money-right { text-align:right; }
-  .money-gphr { font-family:'Cinzel',serif; font-size:13px; color:var(--ice-bright); }
-  .money-missing { font-size:9px; color:var(--ice-red); }
-  .money-value   { font-size:9px; color:var(--ice-gold); opacity:0.75; }
-
-  .ai-box { border:1px solid var(--ice-border); border-radius:3px; padding:12px; margin-bottom:10px; background:rgba(4,13,24,0.55); }
-  .ai-ask-row { display:flex; gap:8px; }
-  .ai-response-label { font-size:10px; color:var(--ice-accent); font-family:'Cinzel',serif; letter-spacing:1px; margin-bottom:8px; opacity:0.8; }
-  .ai-response { font-size:13px; line-height:1.75; color:var(--ice-text); white-space:pre-wrap; }
-  .quick-q { display:flex; align-items:center; gap:10px; padding:8px 10px; border:1px solid transparent; border-radius:3px; margin-bottom:4px; cursor:pointer; transition:all 0.15s; }
-  .quick-q:hover { border-color:var(--ice-border); background:var(--ice-frost); }
-  .quick-q span { font-size:12px; color:var(--ice-text2); }
-
-  .error-box { margin:10px 16px; padding:12px 14px; color:var(--ice-red); font-family:'Cinzel',serif; font-size:12px; border:1px solid rgba(139,26,26,0.5); border-radius:3px; background:var(--ice-red-bg); }
-  .spinner { width:16px; height:16px; border:2px solid var(--ice-border); border-top-color:var(--ice-accent); border-radius:50%; animation:spin 0.8s linear infinite; display:inline-block; vertical-align:middle; }
-  @keyframes spin { to{transform:rotate(360deg);} }
-  .note { font-size:11px; color:var(--ice-muted); font-style:italic; margin-top:6px; }
-  .search-bar { width:100%; background:rgba(4,13,24,0.65); border:1px solid var(--ice-border); border-radius:3px; padding:7px 11px; color:var(--ice-text); font-family:'Crimson Pro',Georgia,serif; font-size:13px; outline:none; margin-bottom:10px; transition:border-color 0.2s; }
-  .search-bar:focus { border-color:var(--ice-accent); }
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#040d18;--b1:#1a4a6a;--b2:#2a6a9a;--ac:#7ec8e3;--br:#b8ecff;--dm:#4a8aaa;--mt:#2a5a7a;--tx:#d0eeff;--t2:#8ac4e0;--f1:rgba(126,200,227,0.07);--f2:rgba(126,200,227,0.14);--gn:#50c878;--gnb:rgba(30,100,60,0.18);--rd:#e07070;--rdb:rgba(139,26,26,0.18);--pu:#b090d8;--go:#d4a843;--or:#e8954a;}
+body{font-family:'Crimson Pro',Georgia,serif;background:var(--bg);min-height:100vh;color:var(--tx);overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(ellipse at 15% 15%,rgba(126,200,227,0.05) 0%,transparent 55%),radial-gradient(ellipse at 85% 85%,rgba(100,160,220,0.04) 0%,transparent 55%),url("data:image/svg+xml,%3Csvg width='80' height='80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%237ec8e3' stroke-width='0.35' opacity='0.055'%3E%3Cpolygon points='40,4 54,19 54,35 40,45 26,35 26,19'/%3E%3Cline x1='40' y1='4' x2='40' y2='45'/%3E%3Cline x1='26' y1='19' x2='54' y2='35'/%3E%3Cline x1='54' y1='19' x2='26' y2='35'/%3E%3C/g%3E%3C/svg%3E") repeat;}
+#app{max-width:980px;margin:0 auto;padding:0 0 60px;position:relative;z-index:1;}
+.header{border-bottom:2px solid var(--b2);padding:13px 18px;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(90deg,rgba(4,13,24,0.97),rgba(7,21,37,0.97));position:sticky;top:0;z-index:10;backdrop-filter:blur(8px);box-shadow:0 2px 20px rgba(126,200,227,0.08);}
+.hl{display:flex;align-items:center;gap:12px;}
+.hcrown{font-size:24px;filter:drop-shadow(0 0 8px rgba(126,200,227,0.7));}
+.htitle{font-family:'Cinzel',serif;font-size:19px;font-weight:700;color:var(--br);letter-spacing:3px;text-transform:uppercase;text-shadow:0 0 18px rgba(126,200,227,0.5);}
+.hsub{font-size:11px;color:var(--dm);letter-spacing:1px;font-family:'Cinzel',serif;margin-top:3px;}
+.hr2{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.sdot{width:8px;height:8px;border-radius:50%;background:#555;flex-shrink:0;transition:all 0.3s;}
+.sdot.ok{background:var(--gn);box-shadow:0 0 6px var(--gn);}
+.sdot.err{background:var(--rd);}
+.sdot.busy{background:var(--go);animation:pulse 1s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.4;}}
+.wbanner{margin:10px 16px 0;padding:9px 14px;border:1px solid var(--b2);border-radius:3px;background:linear-gradient(90deg,rgba(126,200,227,0.06),rgba(126,200,227,0.02));font-family:'Cinzel',serif;font-size:11px;color:var(--t2);letter-spacing:0.5px;text-align:center;}
+.wbanner strong{color:var(--br);font-size:13px;text-shadow:0 0 10px rgba(126,200,227,0.4);}
+.pbar{display:flex;align-items:center;gap:6px;padding:8px 16px 0;flex-wrap:wrap;}
+.pchip{font-family:'Cinzel',serif;font-size:9px;letter-spacing:0.5px;padding:4px 10px;border:1px solid var(--b1);border-radius:12px;cursor:pointer;color:var(--dm);background:transparent;transition:all 0.15s;}
+.pchip.active{border-color:var(--ac);color:var(--ac);background:var(--f2);}
+.irow{display:flex;gap:8px;padding:10px 16px 0;}
+input[type="text"],input[type="password"]{flex:1;background:rgba(4,13,24,0.75);border:1px solid var(--b1);border-radius:3px;padding:8px 12px;color:var(--tx);font-family:'Crimson Pro',Georgia,serif;font-size:14px;outline:none;transition:border-color 0.2s;}
+input:focus{border-color:var(--ac);}
+.btn{font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;padding:8px 14px;border:1px solid var(--b2);background:var(--f2);color:var(--br);border-radius:3px;cursor:pointer;transition:all 0.2s;text-transform:uppercase;white-space:nowrap;}
+.btn:hover{background:rgba(126,200,227,0.24);}
+.btn:disabled{opacity:0.4;cursor:default;}
+.btn-sm{font-size:9px;padding:5px 10px;}
+.btn-danger{border-color:rgba(224,112,112,0.4);color:var(--rd);}
+.btn-danger:hover{background:var(--rdb);}
+.btn-green{border-color:rgba(80,200,120,0.4);color:var(--gn);}
+.btn-green:hover{background:var(--gnb);}
+.tabs{display:flex;border-bottom:1px solid var(--b1);background:rgba(4,13,24,0.65);margin-top:10px;overflow-x:auto;}
+.tab{font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:11px 0;cursor:pointer;border:none;flex:1;min-width:65px;background:transparent;color:var(--dm);border-bottom:2px solid transparent;opacity:0.55;transition:all 0.2s;}
+.tab.active{opacity:1;border-bottom:2px solid var(--ac);background:var(--f1);color:var(--br);}
+.tab:hover{opacity:0.85;color:var(--ac);}
+.panel{display:none;padding:16px;}
+.panel.active{display:block;}
+.sgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px;}
+@media(max-width:500px){.sgrid{grid-template-columns:repeat(2,1fr);}}
+.sbox{border:1px solid var(--b1);border-radius:3px;padding:10px 8px;text-align:center;background:var(--f1);}
+.snum{font-family:'Cinzel',serif;font-size:18px;color:var(--br);font-weight:700;text-shadow:0 0 10px rgba(126,200,227,0.35);}
+.slbl{font-size:10px;color:var(--dm);letter-spacing:0.5px;margin-top:2px;}
+.pw{margin-bottom:9px;}
+.pl{display:flex;justify-content:space-between;font-size:11px;color:var(--ac);margin-bottom:4px;font-family:'Cinzel',serif;letter-spacing:1px;}
+.pb{height:5px;background:rgba(126,200,227,0.07);border-radius:3px;border:1px solid var(--b1);overflow:hidden;}
+.pf{height:100%;background:linear-gradient(90deg,var(--mt),var(--ac),var(--br));transition:width 0.6s ease;box-shadow:0 0 5px rgba(126,200,227,0.35);}
+.st{font-family:'Cinzel',serif;font-size:11px;color:var(--ac);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.st::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--b1),transparent);}
+.frow{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;}
+.fbtn{font-family:'Cinzel',serif;font-size:9px;padding:3px 9px;border:1px solid var(--b1);background:transparent;color:var(--dm);border-radius:2px;cursor:pointer;opacity:0.6;transition:all 0.15s;}
+.fbtn.active,.fbtn:hover{opacity:1;background:var(--f2);border-color:var(--ac);color:var(--ac);}
+.bgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;}
+@media(max-width:520px){.bgrid{grid-template-columns:1fr;}}
+.bcard{border:1px solid var(--b1);border-radius:3px;padding:10px 10px 8px;background:rgba(7,21,37,0.55);position:relative;}
+.bcard.hkc{border-color:#1a5a3a;background:rgba(10,36,24,0.35);}
+.kbadge{position:absolute;top:8px;right:8px;font-size:10px;font-family:'Cinzel',serif;padding:1px 6px;border-radius:2px;}
+.kbadge.hkc{background:rgba(20,80,50,0.55);border:1px solid #1a5a3a;color:var(--gn);}
+.kbadge.nkc{background:rgba(10,30,50,0.45);border:1px solid var(--b1);color:var(--dm);}
+.bname{font-family:'Cinzel',serif;font-size:11px;color:var(--br);font-weight:600;margin-bottom:1px;padding-right:62px;}
+.bcat{font-size:10px;color:var(--t2);opacity:0.65;margin-bottom:5px;}
+.bdrop{display:flex;justify-content:space-between;font-size:10px;padding:1px 0;gap:4px;}
+.bdrop.ob{color:var(--gn);opacity:0.75;text-decoration:line-through;}
+.bdrop.ms{color:var(--t2);opacity:0.5;}
+.bdrop.pt{color:var(--pu);opacity:0.5;}
+.bdrop.pt.ob{color:var(--pu);opacity:0.8;text-decoration:line-through;}
+.bge{opacity:0.5;white-space:nowrap;}
+.ir{display:flex;align-items:center;gap:10px;padding:6px 10px;border:1px solid transparent;border-radius:3px;margin-bottom:2px;transition:background 0.1s;}
+.ir:hover{border-color:var(--b1);background:var(--f1);}
+.ir.ob{border-color:rgba(26,90,58,0.25);background:var(--gnb);}
+.cb{width:12px;height:12px;border:1px solid var(--b1);border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--gn);background:rgba(4,13,24,0.5);}
+.cb.ck{background:rgba(20,80,50,0.4);border-color:#1a6a3a;}
+.in{font-size:12px;color:var(--tx);flex:1;}
+.in.ot{color:var(--t2);opacity:0.4;text-decoration:line-through;}
+.in.pn{color:var(--pu);}
+.igp{font-size:10px;color:var(--go);opacity:0.7;white-space:nowrap;}
+.pill{font-size:9px;font-family:'Cinzel',serif;padding:2px 6px;border-radius:2px;white-space:nowrap;}
+.pi{border:1px solid rgba(126,200,227,0.25);background:rgba(126,200,227,0.07);color:var(--ac);}
+.pg{border:1px solid rgba(80,200,120,0.25);background:rgba(80,200,120,0.07);color:var(--gn);}
+.pp{border:1px solid rgba(176,144,216,0.25);background:rgba(176,144,216,0.07);color:var(--pu);}
+.pgo{border:1px solid rgba(212,168,67,0.25);background:rgba(212,168,67,0.07);color:var(--go);}
+.tlbl{font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:7px 0 3px;color:var(--ac);opacity:0.7;margin-top:4px;}
+.div{height:1px;background:linear-gradient(90deg,var(--b1),transparent);margin:10px 0;}
+.mc{border:1px solid var(--b1);border-radius:3px;padding:10px 12px;background:rgba(7,21,37,0.45);margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;}
+.mc:hover{border-color:var(--b2);}
+.ml{display:flex;align-items:center;gap:10px;flex:1;}
+.rc{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:10px;flex-shrink:0;font-weight:700;}
+.mn{font-family:'Cinzel',serif;font-size:11px;color:var(--br);}
+.ms2{font-size:10px;color:var(--t2);opacity:0.7;}
+.mr2{text-align:right;}
+.mg{font-family:'Cinzel',serif;font-size:13px;color:var(--br);}
+.abox{border:1px solid var(--b1);border-radius:3px;padding:12px;margin-bottom:10px;background:rgba(4,13,24,0.55);}
+.arow{display:flex;gap:8px;}
+.albl{font-size:10px;color:var(--ac);font-family:'Cinzel',serif;letter-spacing:1px;margin-bottom:8px;opacity:0.8;}
+.aresp{font-size:13px;line-height:1.75;color:var(--tx);white-space:pre-wrap;}
+.qq{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid transparent;border-radius:3px;margin-bottom:4px;cursor:pointer;transition:all 0.15s;}
+.qq:hover{border-color:var(--b1);background:var(--f1);}
+.qq span{font-size:12px;color:var(--t2);}
+.ebox{margin:10px 16px;padding:10px 14px;color:var(--rd);font-family:'Cinzel',serif;font-size:11px;border:1px solid rgba(224,112,112,0.3);border-radius:3px;background:var(--rdb);}
+.sbox2{margin:10px 16px;padding:10px 14px;color:var(--gn);font-family:'Cinzel',serif;font-size:11px;border:1px solid rgba(80,200,120,0.3);border-radius:3px;background:var(--gnb);}
+.spin{width:14px;height:14px;border:2px solid var(--b1);border-top-color:var(--ac);border-radius:50%;animation:spin 0.8s linear infinite;display:inline-block;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.note{font-size:11px;color:var(--mt);font-style:italic;margin-top:6px;}
+.sb{width:100%;background:rgba(4,13,24,0.65);border:1px solid var(--b1);border-radius:3px;padding:7px 11px;color:var(--tx);font-family:'Crimson Pro',Georgia,serif;font-size:13px;outline:none;margin-bottom:10px;}
+.sb:focus{border-color:var(--ac);}
+.gstep{display:flex;gap:10px;margin-bottom:10px;align-items:flex-start;}
+.gnum{width:22px;height:22px;border-radius:50%;background:var(--f2);border:1px solid var(--b2);display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:10px;color:var(--ac);flex-shrink:0;}
+.gtxt{font-size:13px;color:var(--t2);line-height:1.6;}
+.gtxt a{color:var(--ac);}
+.gtxt code{background:rgba(126,200,227,0.1);border:1px solid rgba(126,200,227,0.2);padding:1px 5px;border-radius:2px;font-size:11px;color:var(--br);}
+.col-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px;}
+.col-tab{font-family:'Cinzel',serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;padding:6px 12px;border:1px solid var(--b1);border-radius:3px;cursor:pointer;color:var(--dm);background:transparent;transition:all 0.15s;opacity:0.6;}
+.col-tab.active{opacity:1;border-color:var(--ac);color:var(--ac);background:var(--f2);}
+.col-sb{display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--b1);border-radius:3px;background:var(--f1);margin-bottom:12px;flex-wrap:wrap;}
+.csnum{font-family:'Cinzel',serif;font-size:16px;color:var(--br);font-weight:700;}
+.cslbl{font-size:9px;color:var(--dm);}
+.csdiv{width:1px;height:30px;background:var(--b1);}
+.cat-hdr{display:flex;align-items:center;padding:7px 0 3px;}
+.cat-hdr-name{font-family:'Cinzel',serif;font-size:11px;color:var(--br);letter-spacing:1px;min-width:160px;}
+.cat-hdr-bar{flex:1;margin:0 10px;height:3px;background:rgba(126,200,227,0.1);border-radius:2px;overflow:hidden;}
+.cat-hdr-fill{height:100%;background:var(--ac);transition:width 0.4s;}
+.cat-hdr-cnt{font-size:10px;color:var(--dm);white-space:nowrap;}
+.item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:3px;margin-bottom:6px;}
+.ic{font-size:10px;padding:3px 8px;border-radius:2px;border:1px solid transparent;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.ic.have{background:rgba(20,80,50,0.25);border-color:rgba(26,90,58,0.3);color:var(--gn);}
+.ic.need{background:rgba(10,30,50,0.3);border-color:rgba(26,74,106,0.2);color:var(--t2);}
+.tglbtn{font-family:'Cinzel',serif;font-size:9px;padding:3px 8px;border:1px solid var(--b1);border-radius:2px;cursor:pointer;color:var(--dm);background:transparent;transition:all 0.15s;white-space:nowrap;}
+.tglbtn.active{border-color:var(--ac);color:var(--ac);background:var(--f2);}
 </style>
 </head>
 <body>
 <div id="app">
   <div class="header">
-    <div class="header-left">
-      <span class="header-crown">❄</span>
+    <div class="hl">
+      <span class="hcrown">❄</span>
       <div>
-        <div class="header-title">Southp0le</div>
-        <div class="header-sub" id="header-sub">Connecting to Wise Old Man...</div>
+        <div class="htitle" id="htitle">Southp0le</div>
+        <div class="hsub" id="hsub">Loading...</div>
       </div>
     </div>
-    <div class="header-right">
-      <span id="spinner-header" class="spinner" style="display:none"></span>
-      <button class="btn" onclick="refreshPlayer()">❄ Refresh</button>
+    <div class="hr2">
+      <div class="sdot" id="sdot"></div>
+      <span id="spinhdr" class="spin" style="display:none"></span>
+      <button class="btn btn-sm" onclick="saveToGist()">❄ Save</button>
+      <button class="btn btn-sm btn-green" onclick="syncColLog()">↻ Col Log</button>
+      <button class="btn btn-sm" onclick="refreshWOM()">↻ KC</button>
     </div>
   </div>
-
-  <div class="welcome-banner">Welcome back, <strong>Southp0le</strong> &nbsp;·&nbsp; Maxed Main &nbsp;·&nbsp; ❄ Twisted Bow &nbsp;·&nbsp; ❄ Scythe of Vitur &nbsp;·&nbsp; ❄ Tumeken's Shadow</div>
-
-  <div class="input-row">
-    <input type="text" id="rsn-input" value="Southp0le" placeholder="Enter RSN..." onkeydown="if(event.key==='Enter')loadPlayer()"/>
-    <button class="btn" onclick="loadPlayer()">Load Player</button>
+  <div class="wbanner" id="wbanner">Welcome back, <strong>Southp0le</strong> &nbsp;·&nbsp; Maxed Main &nbsp;·&nbsp; ❄ Press ↻ Col Log to sync your full collection log</div>
+  <div class="pbar" id="pbar"></div>
+  <div class="irow">
+    <input type="text" id="rsn" value="Southp0le" placeholder="RSN..." onkeydown="if(event.key==='Enter')addProfile()"/>
+    <button class="btn" onclick="addProfile()">Load</button>
+    <button class="btn btn-sm" onclick="addProfile()">+ Profile</button>
   </div>
-  <div id="error-box" class="error-box" style="display:none"></div>
-
+  <div id="ebox" class="ebox" style="display:none"></div>
+  <div id="sbox" class="sbox2" style="display:none"></div>
   <div class="tabs">
-    <button class="tab active" onclick="switchTab('dashboard',this)">Dashboard</button>
-    <button class="tab" onclick="switchTab('collection',this)">Collection</button>
-    <button class="tab" onclick="switchTab('pets',this)">Pets</button>
-    <button class="tab" onclick="switchTab('upgrades',this)">Gear</button>
-    <button class="tab" onclick="switchTab('money',this)">GP/hr</button>
-    <button class="tab" onclick="switchTab('advisor',this)">AI Advisor</button>
+    <button class="tab active" onclick="sw('dashboard',this)">Dashboard</button>
+    <button class="tab" onclick="sw('collog',this)">Collection Log</button>
+    <button class="tab" onclick="sw('pets',this)">Pets</button>
+    <button class="tab" onclick="sw('money',this)">GP/hr</button>
+    <button class="tab" onclick="sw('advisor',this)">AI Advisor</button>
+    <button class="tab" onclick="sw('settings',this)">⚙ Settings</button>
   </div>
-
   <div id="panel-dashboard" class="panel active"></div>
-  <div id="panel-collection" class="panel"></div>
+  <div id="panel-collog" class="panel"></div>
   <div id="panel-pets" class="panel"></div>
-  <div id="panel-upgrades" class="panel"></div>
   <div id="panel-money" class="panel"></div>
   <div id="panel-advisor" class="panel"></div>
+  <div id="panel-settings" class="panel"></div>
 </div>
-
 <script>
-const WOM_API="https://api.wiseoldman.net/v2/players";
-const BOSS_META=[
-  {id:"zulrah",name:"Zulrah",cat:"Slayer Boss",gphr:4,drops:[{name:"Tanzanite Fang",ge:1800000},{name:"Magic Fang",ge:2000000},{name:"Serpentine Visage",ge:4200000},{name:"Tanzanite Mutagen",ge:900000},{name:"Magma Mutagen",ge:900000},{name:"Uncut Onyx",ge:2800000},{name:"Pet Snakeling",ge:0,pet:true}]},
-  {id:"vorkath",name:"Vorkath",cat:"Slayer Boss",gphr:5,drops:[{name:"Draconic Visage",ge:4000000},{name:"Skeletal Visage",ge:8000000},{name:"Vorkath's Head",ge:350000},{name:"Wrath Talisman",ge:250000},{name:"Pet Vorki",ge:0,pet:true}]},
-  {id:"alchemical_hydra",name:"Alch. Hydra",cat:"Slayer Boss",gphr:4,drops:[{name:"Hydra's Eye",ge:900000},{name:"Hydra's Fang",ge:1200000},{name:"Hydra's Heart",ge:1100000},{name:"Hydra Leather",ge:3800000},{name:"Brimstone Ring",ge:3500000},{name:"Pet Ikkle Hydra",ge:0,pet:true}]},
-  {id:"cerberus",name:"Cerberus",cat:"Slayer Boss",gphr:3.5,drops:[{name:"Primordial Crystal",ge:22000000},{name:"Pegasian Crystal",ge:14000000},{name:"Eternal Crystal",ge:22000000},{name:"Smouldering Stone",ge:2000000},{name:"Pet Hellpuppy",ge:0,pet:true}]},
-  {id:"thermonuclear_smoke_devil",name:"Smoke Devil",cat:"Slayer Boss",gphr:2,drops:[{name:"Occult Necklace",ge:600000},{name:"Smoke Battlestaff",ge:1400000},{name:"Pet Smoke Devil",ge:0,pet:true}]},
-  {id:"kraken",name:"Kraken",cat:"Slayer Boss",gphr:2,drops:[{name:"Kraken Tentacle",ge:800000},{name:"Trident of the Seas",ge:1100000},{name:"Pet Kraken",ge:0,pet:true}]},
-  {id:"grotesque_guardians",name:"Grotesque Guardians",cat:"Slayer Boss",gphr:2.5,drops:[{name:"Black Tourmaline Core",ge:14000000},{name:"Granite Gloves",ge:3500000},{name:"Granite Ring",ge:6000000},{name:"Granite Hammer",ge:3000000},{name:"Granite Boots",ge:700000},{name:"Pet Noon",ge:0,pet:true},{name:"Pet Dusk",ge:0,pet:true}]},
-  {id:"abyssal_sire",name:"Abyssal Sire",cat:"Slayer Boss",gphr:2,drops:[{name:"Abyssal Dagger",ge:2500000},{name:"Abyssal Bludgeon",ge:4000000},{name:"Jar of Miasma",ge:500000},{name:"Abyssal Orphan",ge:0,pet:true}]},
-  {id:"skotizo",name:"Skotizo",cat:"Slayer Boss",gphr:2,drops:[{name:"Uncut Onyx",ge:2800000},{name:"Dark Claw",ge:1500000},{name:"Jal-nib-rek",ge:0,pet:true}]},
-  {id:"kalphite_queen",name:"Kalphite Queen",cat:"Slayer Boss",gphr:1.5,drops:[{name:"Dragon Chainbody",ge:3000000},{name:"Dragon 2H Sword",ge:2500000},{name:"Kalphite Princess",ge:0,pet:true}]},
-  {id:"general_graardor",name:"General Graardor",cat:"God Wars",gphr:3,drops:[{name:"Bandos Chestplate",ge:18000000},{name:"Bandos Tassets",ge:35000000},{name:"Bandos Boots",ge:280000},{name:"Bandos Hilt",ge:7000000},{name:"Pet General Graardor",ge:0,pet:true}]},
-  {id:"kreearra",name:"Kree'arra",cat:"God Wars",gphr:3,drops:[{name:"Armadyl Helmet",ge:5000000},{name:"Armadyl Chestplate",ge:30000000},{name:"Armadyl Chainskirt",ge:22000000},{name:"Armadyl Hilt",ge:5000000},{name:"Pet Kree'arra",ge:0,pet:true}]},
-  {id:"commander_zilyana",name:"Commander Zilyana",cat:"God Wars",gphr:2.5,drops:[{name:"Saradomin Sword",ge:6000000},{name:"Armadyl Crossbow",ge:9000000},{name:"Saradomin Hilt",ge:3000000},{name:"Saradomin's Light",ge:1200000},{name:"Pet Zilyana",ge:0,pet:true}]},
-  {id:"kril_tsutsaroth",name:"K'ril Tsutsaroth",cat:"God Wars",gphr:2.5,drops:[{name:"Zamorakian Spear",ge:11000000},{name:"Staff of the Dead",ge:6000000},{name:"Zamorak Hilt",ge:3500000},{name:"Steam Battlestaff",ge:1200000},{name:"Pet K'ril Tsutsaroth",ge:0,pet:true}]},
-  {id:"nex",name:"Nex",cat:"God Wars",gphr:6,drops:[{name:"Torva Full Helm",ge:55000000},{name:"Torva Platebody",ge:100000000},{name:"Torva Platelegs",ge:70000000},{name:"Zaryte Vambraces",ge:12000000},{name:"Nihil Horn",ge:4000000},{name:"Pet Nex",ge:0,pet:true}]},
-  {id:"callisto",name:"Callisto",cat:"Wilderness",gphr:2,drops:[{name:"Tyrannical Ring",ge:5000000},{name:"Dragon Pickaxe",ge:6000000},{name:"Callisto Cub",ge:0,pet:true}]},
-  {id:"venenatis",name:"Venenatis",cat:"Wilderness",gphr:2,drops:[{name:"Treasonous Ring",ge:4000000},{name:"Dragon 2H Sword",ge:2500000},{name:"Venenatis Spiderling",ge:0,pet:true}]},
-  {id:"vetion",name:"Vet'ion",cat:"Wilderness",gphr:2,drops:[{name:"Ring of the Gods",ge:9000000},{name:"Dragon Pickaxe",ge:6000000},{name:"Vet'ion Jr.",ge:0,pet:true}]},
-  {id:"artio",name:"Artio",cat:"Wilderness",gphr:2.5,drops:[{name:"Tyrannical Ring",ge:5000000},{name:"Dragon Pickaxe",ge:6000000},{name:"Callisto Cub",ge:0,pet:true}]},
-  {id:"spindel",name:"Spindel",cat:"Wilderness",gphr:2.5,drops:[{name:"Treasonous Ring",ge:4000000},{name:"Dragon 2H Sword",ge:2500000},{name:"Venenatis Spiderling",ge:0,pet:true}]},
-  {id:"calvarion",name:"Calvar'ion",cat:"Wilderness",gphr:2.5,drops:[{name:"Ring of the Gods",ge:9000000},{name:"Dragon Pickaxe",ge:6000000},{name:"Vet'ion Jr.",ge:0,pet:true}]},
-  {id:"chaos_elemental",name:"Chaos Elemental",cat:"Wilderness",gphr:1,drops:[{name:"Dragon Pickaxe",ge:6000000},{name:"Dragon 2H Sword",ge:2500000},{name:"Pet Chaos Elemental",ge:0,pet:true}]},
-  {id:"scorpia",name:"Scorpia",cat:"Wilderness",gphr:1.5,drops:[{name:"Odium Shard 3",ge:500000},{name:"Malediction Shard 3",ge:500000},{name:"Scorpia's Offspring",ge:0,pet:true}]},
-  {id:"king_black_dragon",name:"King Black Dragon",cat:"Wilderness",gphr:1.5,drops:[{name:"Draconic Visage",ge:4000000},{name:"Dragon Pickaxe",ge:6000000},{name:"Prince Black Dragon",ge:0,pet:true}]},
-  {id:"dagannoth_rex",name:"Dagannoth Rex",cat:"Dagannoth Kings",gphr:2,drops:[{name:"Berserker Ring",ge:3500000},{name:"Warrior Ring",ge:400000},{name:"Dragon Axe",ge:5500000},{name:"Pet Dagannoth Rex",ge:0,pet:true}]},
-  {id:"dagannoth_prime",name:"Dagannoth Prime",cat:"Dagannoth Kings",gphr:2,drops:[{name:"Seers Ring",ge:2000000},{name:"Mud Battlestaff",ge:800000},{name:"Dragon Axe",ge:5500000},{name:"Pet Dagannoth Prime",ge:0,pet:true}]},
-  {id:"dagannoth_supreme",name:"Dagannoth Supreme",cat:"Dagannoth Kings",gphr:2,drops:[{name:"Archers Ring",ge:3500000},{name:"Seercull",ge:200000},{name:"Dragon Axe",ge:5500000},{name:"Pet Dagannoth Supreme",ge:0,pet:true}]},
-  {id:"giant_mole",name:"Giant Mole",cat:"World Boss",gphr:1,drops:[{name:"Mole Skin (bulk)",ge:1000000},{name:"Mole Claw (bulk)",ge:500000},{name:"Baby Mole",ge:0,pet:true}]},
-  {id:"sarachnis",name:"Sarachnis",cat:"World Boss",gphr:2,drops:[{name:"Sarachnis Cudgel",ge:2000000},{name:"Jar of Eyes",ge:800000},{name:"Giant Egg Sac",ge:100000},{name:"Sraracha",ge:0,pet:true}]},
-  {id:"scurrius",name:"Scurrius",cat:"World Boss",gphr:1.5,drops:[{name:"Scurrius' Spine",ge:5000000},{name:"Scurry",ge:0,pet:true}]},
-  {id:"bryophyta",name:"Bryophyta",cat:"World Boss",gphr:1,drops:[{name:"Bryophyta's Essence",ge:4000000},{name:"Mossy Key",ge:150000}]},
-  {id:"obor",name:"Obor",cat:"World Boss",gphr:0.5,drops:[{name:"Hill Giant Club",ge:300000},{name:"Giant Key",ge:50000}]},
-  {id:"blood_moon",name:"Blood Moon",cat:"Perilous Moons",gphr:2,drops:[{name:"Blood Moon Helm",ge:3000000},{name:"Blood Moon Chestplate",ge:6000000},{name:"Blood Moon Tassets",ge:4000000},{name:"Dual Macuahuitl",ge:8000000}]},
-  {id:"blue_moon",name:"Blue Moon",cat:"Perilous Moons",gphr:2,drops:[{name:"Blue Moon Helm",ge:3000000},{name:"Blue Moon Chestplate",ge:6000000},{name:"Blue Moon Tassets",ge:4000000},{name:"Blue Moon Spear",ge:10000000}]},
-  {id:"eclipse_moon",name:"Eclipse Moon",cat:"Perilous Moons",gphr:2,drops:[{name:"Eclipse Moon Helm",ge:3000000},{name:"Eclipse Moon Chestplate",ge:6000000},{name:"Eclipse Moon Tassets",ge:4000000},{name:"Eclipse Atlatl",ge:15000000}]},
-  {id:"nightmare",name:"The Nightmare",cat:"End-Game",gphr:5,drops:[{name:"Inquisitor's Great Helm",ge:15000000},{name:"Inquisitor's Hauberk",ge:60000000},{name:"Inquisitor's Plateskirt",ge:35000000},{name:"Inquisitor's Mace",ge:20000000},{name:"Nightmare Staff",ge:12000000},{name:"Eldritch Orb",ge:20000000},{name:"Volatile Orb",ge:50000000},{name:"Harmonised Orb",ge:80000000},{name:"Little Nightmare",ge:0,pet:true}]},
-  {id:"phosanis_nightmare",name:"Phosani's Nightmare",cat:"End-Game",gphr:6,drops:[{name:"Inquisitor's Great Helm",ge:15000000},{name:"Inquisitor's Hauberk",ge:60000000},{name:"Inquisitor's Plateskirt",ge:35000000},{name:"Eldritch Orb",ge:20000000},{name:"Volatile Orb",ge:50000000},{name:"Harmonised Orb",ge:80000000},{name:"Little Nightmare",ge:0,pet:true}]},
-  {id:"chambers_of_xeric",name:"Chambers of Xeric",cat:"Raids",gphr:8,drops:[{name:"Twisted Bow",ge:1500000000},{name:"Ancestral Hat",ge:25000000},{name:"Ancestral Robe Top",ge:75000000},{name:"Ancestral Robe Bottom",ge:55000000},{name:"Dragon Claws",ge:60000000},{name:"Kodai Insignia",ge:70000000},{name:"Elder Maul",ge:35000000},{name:"Twisted Buckler",ge:14000000},{name:"Dinh's Bulwark",ge:8000000},{name:"Olmlet",ge:0,pet:true}]},
-  {id:"theatre_of_blood",name:"Theatre of Blood",cat:"Raids",gphr:9,drops:[{name:"Scythe of Vitur",ge:800000000},{name:"Ghrazi Rapier",ge:80000000},{name:"Sanguinesti Staff",ge:100000000},{name:"Justiciar Faceguard",ge:4000000},{name:"Justiciar Leggings",ge:5000000},{name:"Justiciar Chestguard",ge:5000000},{name:"Avernic Defender Hilt",ge:60000000},{name:"Lil' Zik",ge:0,pet:true}]},
-  {id:"tombs_of_amascut",name:"Tombs of Amascut",cat:"Raids",gphr:10,drops:[{name:"Tumeken's Shadow",ge:800000000},{name:"Osmumten's Fang",ge:70000000},{name:"Masori Mask",ge:15000000},{name:"Masori Body",ge:50000000},{name:"Masori Chaps",ge:30000000},{name:"Elidinis' Ward",ge:200000000},{name:"Lightbearer",ge:8000000},{name:"Thread of Elidinis",ge:3000000},{name:"Little Tektiny",ge:0,pet:true}]},
-  {id:"duke_sucellus",name:"Duke Sucellus",cat:"DT2 Bosses",gphr:3,drops:[{name:"Bellator Vestige",ge:80000000},{name:"Awakener's Orb",ge:3000000},{name:"Chromium Ingot",ge:1500000},{name:"Duke",ge:0,pet:true}]},
-  {id:"the_leviathan",name:"The Leviathan",cat:"DT2 Bosses",gphr:3.5,drops:[{name:"Venator Vestige",ge:200000000},{name:"Awakener's Orb",ge:3000000},{name:"Leviathan",ge:0,pet:true}]},
-  {id:"the_whisperer",name:"The Whisperer",cat:"DT2 Bosses",gphr:3,drops:[{name:"Magus Vestige",ge:100000000},{name:"Awakener's Orb",ge:3000000},{name:"Wisp",ge:0,pet:true}]},
-  {id:"vardorvis",name:"Vardorvis",cat:"DT2 Bosses",gphr:4,drops:[{name:"Ultor Vestige",ge:150000000},{name:"Awakener's Orb",ge:3000000},{name:"Chromium Ingot",ge:1500000},{name:"Butch",ge:0,pet:true}]},
-  {id:"phantom_muspah",name:"Phantom Muspah",cat:"End-Game",gphr:4,drops:[{name:"Saturated Heart",ge:50000000},{name:"Ancient Shard",ge:600000},{name:"Phosani's Nightmare (pet)",ge:0,pet:true}]},
-  {id:"corporeal_beast",name:"Corporeal Beast",cat:"End-Game",gphr:2,drops:[{name:"Elysian Sigil",ge:700000000},{name:"Arcane Sigil",ge:50000000},{name:"Spectral Sigil",ge:12000000},{name:"Holy Elixir",ge:300000},{name:"Pet Dark Core",ge:0,pet:true}]},
-  {id:"corrupt_gauntlet",name:"Corrupted Gauntlet",cat:"End-Game",gphr:5,drops:[{name:"Enhanced Crystal Weapon Seed",ge:90000000},{name:"Crystal Armour Seed",ge:700000},{name:"Youngllef",ge:0,pet:true}]},
-  {id:"araxxor",name:"Araxxor",cat:"End-Game",gphr:5,drops:[{name:"Araxyte Fang",ge:80000000},{name:"Noxious Pommel",ge:60000000},{name:"Araxyte Head",ge:5000000},{name:"Araxyte Pet",ge:0,pet:true}]},
-  {id:"sol_heredit",name:"Sol Heredit",cat:"End-Game",gphr:5,drops:[{name:"Dizana's Quiver",ge:70000000},{name:"Tonalztics of Ralos",ge:120000000},{name:"Sunfire Splinters",ge:800000},{name:"Little Sol",ge:0,pet:true}]},
-  {id:"hueycoatl",name:"The Hueycoatl",cat:"End-Game",gphr:4,drops:[{name:"Dragon Hunter Wand",ge:30000000},{name:"Hueycoatl Hide",ge:5000000},{name:"Tome of Earth",ge:4000000},{name:"Huberte",ge:0,pet:true}]},
-  {id:"yama",name:"Yama",cat:"End-Game",gphr:5,drops:[{name:"Abyssal Lantern",ge:50000000},{name:"Obsidian Armour Seed",ge:20000000},{name:"Abyssal Cape",ge:30000000},{name:"Abyssal Familiar",ge:0,pet:true}]},
-  {id:"tzkal_zuk",name:"TzKal-Zuk",cat:"Inferno",gphr:0,drops:[{name:"Infernal Cape",ge:3000000},{name:"Lava Whip",ge:30000000},{name:"Jal-Nib-Rek",ge:0,pet:true}]},
-  {id:"tztok_jad",name:"TzTok-Jad",cat:"Inferno",gphr:0,drops:[{name:"Fire Cape",ge:200000},{name:"Jal-Nib-Rek (Fight Caves)",ge:0,pet:true}]},
-  {id:"barrows_chests",name:"Barrows",cat:"Misc",gphr:1.5,drops:[{name:"Dharok's Set",ge:4000000},{name:"Ahrim's Set",ge:3500000},{name:"Karil's Set",ge:2000000},{name:"Guthan's Set",ge:2500000},{name:"Verac's Set",ge:1000000},{name:"Torag's Set",ge:700000}]},
-  {id:"hespori",name:"Hespori",cat:"Misc",gphr:0.5,drops:[{name:"Bottomless Compost Bucket",ge:700000},{name:"White Lily Seed",ge:50000}]},
-  {id:"mimic",name:"The Mimic",cat:"Misc",gphr:0.5,drops:[{name:"3rd Age Piece",ge:0},{name:"Pet Mimic",ge:0,pet:true}]},
-  {id:"deranged_archaeologist",name:"Deranged Archaeologist",cat:"Misc",gphr:1,drops:[{name:"Odium Shard 3",ge:400000},{name:"Malediction Shard 3",ge:400000}]},
+const WOM="https://api.wiseoldman.net/v2/players";
+const TEMPLE="https://templeosrs.com/api/collection-log";
+const WSIDS=new Set([1249,2366,2577,2579,2581,2583,2585,2587,2589,2591,2593,2595,2597,2599,2601,2603,2605,2607,2609,2611,2613,2615,2617,2619,2621,2623,2625,2627,2629,2631,2633,2635,2637,2639,2641,2643,2645,2647,2649,2651,2653,2655,2657,2665,2667,2669,2671,2673,2675,2978,2979,2980,2981,2982,2983,2984,2985,2986,2987,2988,2989,2990,2991,2996,2997,3057,3058,3059,3060,3061,3140,3470,3472,3473,3474,3475,3476,3477,3478,3479,3480,3827,3828,3829,3830,3831,3832,3833,3834,3835,3836,3837,3838,4068,4069,4070,4071,4072,4099,4101,4103,4105,4107,4109,4111,4113,4117,4119,4121,4123,4125,4127,4129,4131,4151,4153,4207,4503,4504,4505,4506,4507,4508,4509,4510,4511,4512,4513,4514,4515,4516,4712,4720,4722,4724,4726,4728,4730,4732,4734,4738,4740,4749,4753,4755,4757,5553,5554,5555,5556,5557,6180,6181,6182,6183,6562,6570,6571,6654,6655,6656,6665,6666,6724,6731,6733,6735,6737,6739,6800,6801,6802,6804,6809,6889,6908,6910,6912,6914,6916,6918,6920,6922,6924,6926,7158,7319,7321,7323,7325,7327,7329,7330,7331,7332,7334,7338,7340,7342,7344,7346,7348,7350,7352,7354,7356,7358,7362,7364,7366,7368,7370,7372,7374,7376,7378,7380,7382,7384,7386,7388,7390,7394,7396,7399,7400,7416,7418,7536,7538,7592,7593,7594,7595,7596,7975,7976,7977,7978,7979,7980,7981,7989,7991,7993,8839,8840,8841,8842,8844,8845,8846,8847,8848,8849,8850,8901,8940,8941,8952,8953,8954,8955,8956,8957,8958,8959,8960,8961,8962,8963,8964,8965,8966,8967,8968,8969,8970,8971,8988,8991,8992,8993,8994,8995,8996,8997,9007,9008,9010,9011,9469,9470,9472,9475,10280,10282,10284,10286,10288,10296,10298,10300,10302,10304,10306,10310,10312,10314,10316,10318,10320,10322,10324,10326,10327,10354,10364,10366,10368,10370,10372,10374,10376,10378,10380,10382,10384,10386,10388,10390,10392,10394,10396,10398,10400,10402,10404,10406,10408,10412,10414,10416,10418,10420,10422,10424,10426,10428,10430,10432,10434,10436,10438,10440,10442,10446,10448,10450,10452,10454,10456,10458,10460,10462,10464,10466,10468,10470,10472,10474,10476,10551,10564,10589,10933,10939,10940,10941,10976,10977,11037,11235,11286,11335,11338,11346,11350,11363,11663,11664,11665,11666,11785,11791,11812,11818,11820,11822,11832,11834,11836,11838,11840,11849,11850,11852,11854,11856,11858,11860,11891,11892,11893,11894,11895,11896,11897,11898,11899,11900,11901,11902,11905,11908,11920,11930,11931,11932,11942,11990,11995,11998,12002,12004,12007,12013,12014,12015,12016,12193,12195,12197,12199,12201,12203,12205,12207,12209,12211,12213,12215,12217,12219,12221,12223,12225,12227,12229,12231,12233,12235,12237,12239,12241,12243,12245,12247,12249,12251,12253,12255,12257,12259,12261,12263,12265,12267,12269,12271,12273,12275,12277,12279,12281,12283,12285,12287,12289,12291,12293,12295,12297,12299,12301,12303,12305,12307,12309,12311,12313,12315,12317,12319,12321,12323,12325,12327,12331,12333,12335,12339,12341,12343,12345,12347,12349,12351,12353,12355,12359,12361,12363,12365,12367,12369,12371,12373,12375,12377,12379,12383,12385,12387,12393,12395,12397,12402,12403,12404,12405,12406,12407,12408,12409,12410,12411,12428,12430,12432,12439,12445,12447,12449,12451,12453,12455,12460,12462,12464,12466,12468,12472,12474,12478,12480,12482,12484,12486,12488,12492,12494,12496,12498,12500,12502,12508,12510,12512,12514,12516,12518,12520,12522,12524,12526,12528,12530,12532,12534,12536,12538,12598,12613,12614,12615,12616,12617,12618,12619,12620,12621,12622,12623,12624,12637,12638,12639,12642,12645,12646,12650,12653,12655,12851,12922,12927,12932,12934,12938,12954,13071,13072,13073,13226,13227,13229,13231,13233,13245,13249,13256,13258,13259,13260,13261,13262,13265,13274,13275,13276,13320,13321,13322,13353,13357,13358,13359,13360,13361,13362,13363,13364,13365,13366,13367,13368,13369,13370,13371,13372,13373,13374,13375,13376,13377,13378,13379,13380,13381,13392,13576,13639,13640,13642,13644,13646,19529,19586,19610,19677,19679,19681,19683,19685,19707,19724,19912,19915,19918,19921,19924,19927,19933,19936,19943,19946,19949,19952,19955,19958,19964,19988,19991,19997,20002,20008,20020,20023,20029,20032,20035,20041,20047,20050,20053,20062,20065,20074,20077,20110,20113,20116,20119,20125,20128,20131,20134,20137,20140,20143,20152,20166,20169,20172,20175,20178,20181,20184,20187,20190,20196,20199,20202,20205,20208,20214,20217,20220,20223,20226,20229,20232,20235,20238,20240,20243,20246,20251,20254,20257,20260,20263,20266,20269,20272,20275,20439,20517,20520,20595,20659,20661,20665,20704,20706,20708,20710,20712,20718,20720,20724,20727,20730,20736,20754,20849,21009,21012,21027,21028,21047,21061,21064,21067,21070,21073,21076,21079,21270,21273,21275,21343,21345,21387,21392,21541,21646,21664,21666,21668,21670,21672,21674,21676,21678,21680,21682,21697,21726,21730,21736,21739,21742,21802,21817,21820,21838,21907,22106,22111,22231,22236,22246,22374,22804,22838,22840,22842,22844,22846,22875,22881,22883,22885,22957,22960,22963,22966,22969,22971,22973,22983,22988,22994,23053,23077,23185,23188,23191,23203,23206,23218,23224,23227,23232,23237,23246,23249,23255,23270,23273,23285,23288,23291,23294,23297,23300,23303,23306,23309,23312,23315,23318,23321,23324,23327,23348,23354,23357,23360,23363,23366,23369,23372,23375,23378,23381,23384,23389,23392,23395,23398,23401,23404,23407,23410,23413,23517,23522,23528,23757,23859,23943,23956,23959,24000,24268,24711,24719,24721,24723,24725,24727,24729,24731,24733,24740,24763,24765,24767,24769,24771,24862,24863,24864,24865,24866,24867,24872,24874,24876,24878,24880,24884,24885,25129,25131,25133,25135,25137,25163,25165,25167,25169,25171,25174,25434,25436,25438,25440,25442,25445,25448,25451,25454,25474,25476,25524,25539,25547,25576,25578,25580,25582,25588,25592,25594,25596,25598,25615,25617,25618,25619,25620,25621,25622,25623,25624,25627,25628,25629,25630,25635,25637,25639,25641,25644,25686,25688,25690,25692,25694,25844,25846,25975,25985,26219,26223,26225,26227,26231,26241,26243,26245,26792,26798,26807,26809,26813,26822,26850,26852,26854,26856,26908,26912,26945,27012,27014,27017,27019,27021,27023,27025,27027,27029,27226,27229,27257,27279,27283,27285,27289,27293,27372,27590,27614,27616,27622,27627,27643,27667,27670,27681,27684,27695,28138,28140,28146,28166,28169,28171,28173,28175,28177,28248,28252,28268,28270,28272,28274,28276,28279,28281,28283,28285,28319,28321,28323,28325,28330,28331,28332,28333,28334,28583,28613,28616,28618,28620,28622,28626,28630,28655,28663,28674,28798,28813,28924,28962,28988,28991,28997,29000,29004,29007,29010,29013,29016,29019,29022,29025,29028,29084,29263,29265,29267,29269,29309,29455,29472,29474,29476,29478,29482,29580,29684,29781,29782,29784,29786,29788,29790,29792,29794,29892,29895,29974,29978,29982,29986,29992,29996,30002,30040,30042,30045,30048,30051,30054,30057,30060,30068,30088,30640,30902,30904,30906,30908,30910,30912,30914,30916,30918,30920,30922,30924,30926,31032,31034,31043,31052,31732,31733,31734,31989,32398,32401]);
+
+const BOSSES=[
+  {id:"zulrah",name:"Zulrah",cat:"Slayer Boss",gphr:4,drops:[{n:"Tanzanite Fang",ge:1800000,i:12922},{n:"Magic Fang",ge:2000000,i:12927},{n:"Serpentine Visage",ge:4200000,i:12932},{n:"Tanzanite Mutagen",ge:900000,i:12934},{n:"Magma Mutagen",ge:900000,i:12938},{n:"Pet Snakeling",ge:0,pet:1}]},
+  {id:"vorkath",name:"Vorkath",cat:"Slayer Boss",gphr:5,drops:[{n:"Draconic Visage",ge:4000000,i:11286},{n:"Skeletal Visage",ge:8000000,i:22006},{n:"Vorkath's Head",ge:350000,i:21907},{n:"Pet Vorki",ge:0,pet:1}]},
+  {id:"alchemical_hydra",name:"Alch. Hydra",cat:"Slayer Boss",gphr:4,drops:[{n:"Hydra's Eye",ge:900000,i:22969},{n:"Hydra's Fang",ge:1200000,i:22971},{n:"Hydra's Heart",ge:1100000,i:22973},{n:"Hydra Leather",ge:3800000,i:22988},{n:"Brimstone Ring",ge:3500000,i:22994},{n:"Pet Ikkle Hydra",ge:0,pet:1}]},
+  {id:"cerberus",name:"Cerberus",cat:"Slayer Boss",gphr:3.5,drops:[{n:"Primordial Crystal",ge:22000000,i:13227},{n:"Pegasian Crystal",ge:14000000,i:13229},{n:"Eternal Crystal",ge:22000000,i:13231},{n:"Smouldering Stone",ge:2000000,i:13233},{n:"Pet Hellpuppy",ge:0,pet:1}]},
+  {id:"thermonuclear_smoke_devil",name:"Smoke Devil",cat:"Slayer Boss",gphr:2,drops:[{n:"Occult Necklace",ge:600000,i:12002},{n:"Smoke Battlestaff",ge:1400000,i:11998},{n:"Pet Smoke Devil",ge:0,pet:1}]},
+  {id:"kraken",name:"Kraken",cat:"Slayer Boss",gphr:2,drops:[{n:"Kraken Tentacle",ge:800000,i:12004},{n:"Trident of the Seas",ge:1100000,i:11905},{n:"Pet Kraken",ge:0,pet:1}]},
+  {id:"grotesque_guardians",name:"Grotesque Guardians",cat:"Slayer Boss",gphr:2.5,drops:[{n:"Black Tourmaline Core",ge:14000000,i:21061},{n:"Granite Gloves",ge:3500000,i:21643},{n:"Granite Ring",ge:6000000,i:21646},{n:"Granite Hammer",ge:3000000,i:21742},{n:"Pet Noon",ge:0,pet:1},{n:"Pet Dusk",ge:0,pet:1}]},
+  {id:"abyssal_sire",name:"Abyssal Sire",cat:"Slayer Boss",gphr:2,drops:[{n:"Abyssal Dagger",ge:2500000,i:13265},{n:"Abyssal Bludgeon",ge:4000000,i:13263},{n:"Jar of Miasma",ge:500000,i:13245},{n:"Abyssal Orphan",ge:0,pet:1}]},
+  {id:"skotizo",name:"Skotizo",cat:"Slayer Boss",gphr:2,drops:[{n:"Uncut Onyx",ge:2800000,i:6571},{n:"Dark Claw",ge:1500000,i:22820},{n:"Jal-nib-rek",ge:0,pet:1}]},
+  {id:"kalphite_queen",name:"Kalphite Queen",cat:"Slayer Boss",gphr:1.5,drops:[{n:"Dragon Chainbody",ge:3000000,i:3140},{n:"Dragon 2H Sword",ge:2500000,i:7158},{n:"Kalphite Princess",ge:0,pet:1}]},
+  {id:"general_graardor",name:"General Graardor",cat:"God Wars",gphr:3,drops:[{n:"Bandos Chestplate",ge:18000000,i:11832},{n:"Bandos Tassets",ge:35000000,i:11834},{n:"Bandos Boots",ge:280000,i:11836},{n:"Bandos Hilt",ge:7000000,i:11838},{n:"Pet General Graardor",ge:0,pet:1}]},
+  {id:"kreearra",name:"Kree'arra",cat:"God Wars",gphr:3,drops:[{n:"Armadyl Helmet",ge:5000000,i:11826},{n:"Armadyl Chestplate",ge:30000000,i:11828},{n:"Armadyl Chainskirt",ge:22000000,i:11830},{n:"Armadyl Hilt",ge:5000000,i:11818},{n:"Pet Kree'arra",ge:0,pet:1}]},
+  {id:"commander_zilyana",name:"Commander Zilyana",cat:"God Wars",gphr:2.5,drops:[{n:"Saradomin Sword",ge:6000000,i:11812},{n:"Armadyl Crossbow",ge:9000000,i:11785},{n:"Saradomin Hilt",ge:3000000,i:11820},{n:"Saradomin's Light",ge:1200000,i:11822},{n:"Pet Zilyana",ge:0,pet:1}]},
+  {id:"kril_tsutsaroth",name:"K'ril Tsutsaroth",cat:"God Wars",gphr:2.5,drops:[{n:"Zamorakian Spear",ge:11000000,i:11791},{n:"Staff of the Dead",ge:6000000,i:11791},{n:"Zamorak Hilt",ge:3500000,i:11808},{n:"Pet K'ril Tsutsaroth",ge:0,pet:1}]},
+  {id:"nex",name:"Nex",cat:"God Wars",gphr:6,drops:[{n:"Torva Full Helm",ge:55000000,i:26384},{n:"Torva Platebody",ge:100000000,i:26386},{n:"Torva Platelegs",ge:70000000,i:26388},{n:"Zaryte Vambraces",ge:12000000,i:26241},{n:"Nihil Horn",ge:4000000,i:26231},{n:"Pet Nex",ge:0,pet:1}]},
+  {id:"callisto",name:"Callisto",cat:"Wilderness",gphr:2,drops:[{n:"Tyrannical Ring",ge:5000000,i:12651},{n:"Dragon Pickaxe",ge:6000000,i:11920},{n:"Callisto Cub",ge:0,pet:1}]},
+  {id:"venenatis",name:"Venenatis",cat:"Wilderness",gphr:2,drops:[{n:"Treasonous Ring",ge:4000000,i:12644},{n:"Dragon 2H Sword",ge:2500000,i:7158},{n:"Venenatis Spiderling",ge:0,pet:1}]},
+  {id:"vetion",name:"Vet'ion",cat:"Wilderness",gphr:2,drops:[{n:"Ring of the Gods",ge:9000000,i:12601},{n:"Dragon Pickaxe",ge:6000000,i:11920},{n:"Vet'ion Jr.",ge:0,pet:1}]},
+  {id:"artio",name:"Artio",cat:"Wilderness",gphr:2.5,drops:[{n:"Tyrannical Ring",ge:5000000,i:12651},{n:"Dragon Pickaxe",ge:6000000,i:11920},{n:"Callisto Cub",ge:0,pet:1}]},
+  {id:"spindel",name:"Spindel",cat:"Wilderness",gphr:2.5,drops:[{n:"Treasonous Ring",ge:4000000,i:12644},{n:"Dragon 2H Sword",ge:2500000,i:7158},{n:"Venenatis Spiderling",ge:0,pet:1}]},
+  {id:"calvarion",name:"Calvar'ion",cat:"Wilderness",gphr:2.5,drops:[{n:"Ring of the Gods",ge:9000000,i:12601},{n:"Dragon Pickaxe",ge:6000000,i:11920},{n:"Vet'ion Jr.",ge:0,pet:1}]},
+  {id:"chaos_elemental",name:"Chaos Elemental",cat:"Wilderness",gphr:1,drops:[{n:"Dragon Pickaxe",ge:6000000,i:11920},{n:"Dragon 2H Sword",ge:2500000,i:7158},{n:"Pet Chaos Elemental",ge:0,pet:1}]},
+  {id:"scorpia",name:"Scorpia",cat:"Wilderness",gphr:1.5,drops:[{n:"Odium Shard 3",ge:500000,i:12612},{n:"Malediction Shard 3",ge:500000,i:12609},{n:"Scorpia's Offspring",ge:0,pet:1}]},
+  {id:"king_black_dragon",name:"King Black Dragon",cat:"Wilderness",gphr:1.5,drops:[{n:"Draconic Visage",ge:4000000,i:11286},{n:"Dragon Pickaxe",ge:6000000,i:11920},{n:"Prince Black Dragon",ge:0,pet:1}]},
+  {id:"dagannoth_rex",name:"Dagannoth Rex",cat:"DKs",gphr:2,drops:[{n:"Berserker Ring",ge:3500000,i:6737},{n:"Warrior Ring",ge:400000,i:6731},{n:"Dragon Axe",ge:5500000,i:6739},{n:"Pet Dagannoth Rex",ge:0,pet:1}]},
+  {id:"dagannoth_prime",name:"Dagannoth Prime",cat:"DKs",gphr:2,drops:[{n:"Seers Ring",ge:2000000,i:6733},{n:"Mud Battlestaff",ge:800000,i:6562},{n:"Dragon Axe",ge:5500000,i:6739},{n:"Pet Dagannoth Prime",ge:0,pet:1}]},
+  {id:"dagannoth_supreme",name:"Dagannoth Supreme",cat:"DKs",gphr:2,drops:[{n:"Archers Ring",ge:3500000,i:6735},{n:"Dragon Axe",ge:5500000,i:6739},{n:"Seercull",ge:200000,i:6724},{n:"Pet Dagannoth Supreme",ge:0,pet:1}]},
+  {id:"giant_mole",name:"Giant Mole",cat:"World Boss",gphr:1,drops:[{n:"Mole Skin",ge:200000,i:7576},{n:"Baby Mole",ge:0,pet:1}]},
+  {id:"sarachnis",name:"Sarachnis",cat:"World Boss",gphr:2,drops:[{n:"Sarachnis Cudgel",ge:2000000,i:23591},{n:"Jar of Eyes",ge:800000,i:23607},{n:"Sraracha",ge:0,pet:1}]},
+  {id:"scurrius",name:"Scurrius",cat:"World Boss",gphr:1.5,drops:[{n:"Scurrius' Spine",ge:5000000,i:28808},{n:"Scurry",ge:0,pet:1}]},
+  {id:"bryophyta",name:"Bryophyta",cat:"World Boss",gphr:1,drops:[{n:"Bryophyta's Essence",ge:4000000,i:22879},{n:"Mossy Key",ge:150000,i:22997}]},
+  {id:"obor",name:"Obor",cat:"World Boss",gphr:0.5,drops:[{n:"Hill Giant Club",ge:300000,i:21473},{n:"Giant Key",ge:50000,i:20754}]},
+  {id:"blood_moon",name:"Blood Moon",cat:"Perilous Moons",gphr:2,drops:[{n:"Blood Moon Helm",ge:3000000,i:29221},{n:"Blood Moon Chestplate",ge:6000000,i:29223},{n:"Blood Moon Tassets",ge:4000000,i:29225},{n:"Dual Macuahuitl",ge:8000000,i:29259}]},
+  {id:"blue_moon",name:"Blue Moon",cat:"Perilous Moons",gphr:2,drops:[{n:"Blue Moon Helm",ge:3000000,i:29227},{n:"Blue Moon Chestplate",ge:6000000,i:29229},{n:"Blue Moon Tassets",ge:4000000,i:29231},{n:"Blue Moon Spear",ge:10000000,i:29261}]},
+  {id:"eclipse_moon",name:"Eclipse Moon",cat:"Perilous Moons",gphr:2,drops:[{n:"Eclipse Moon Helm",ge:3000000,i:29233},{n:"Eclipse Moon Chestplate",ge:6000000,i:29235},{n:"Eclipse Moon Tassets",ge:4000000,i:29237},{n:"Eclipse Atlatl",ge:15000000,i:29263}]},
+  {id:"nightmare",name:"The Nightmare",cat:"End-Game",gphr:5,drops:[{n:"Inquisitor's Great Helm",ge:15000000,i:24422},{n:"Inquisitor's Hauberk",ge:60000000,i:24419},{n:"Inquisitor's Plateskirt",ge:35000000,i:24420},{n:"Inquisitor's Mace",ge:20000000,i:24421},{n:"Eldritch Orb",ge:20000000,i:24480},{n:"Volatile Orb",ge:50000000,i:24483},{n:"Harmonised Orb",ge:80000000,i:24481},{n:"Little Nightmare",ge:0,pet:1}]},
+  {id:"phosanis_nightmare",name:"Phosani's Nightmare",cat:"End-Game",gphr:6,drops:[{n:"Inquisitor's Great Helm",ge:15000000,i:24422},{n:"Inquisitor's Hauberk",ge:60000000,i:24419},{n:"Eldritch Orb",ge:20000000,i:24480},{n:"Volatile Orb",ge:50000000,i:24483},{n:"Harmonised Orb",ge:80000000,i:24481},{n:"Little Nightmare",ge:0,pet:1}]},
+  {id:"chambers_of_xeric",name:"Chambers of Xeric",cat:"Raids",gphr:8,drops:[{n:"Twisted Bow",ge:1500000000,i:21073},{n:"Ancestral Hat",ge:25000000,i:21028},{n:"Ancestral Robe Top",ge:75000000,i:21067},{n:"Ancestral Robe Bottom",ge:55000000,i:21027},{n:"Dragon Claws",ge:60000000,i:21076},{n:"Kodai Insignia",ge:70000000,i:21070},{n:"Elder Maul",ge:35000000,i:21079},{n:"Twisted Buckler",ge:14000000,i:21047},{n:"Dinh's Bulwark",ge:8000000,i:21064},{n:"Olmlet",ge:0,pet:1}]},
+  {id:"theatre_of_blood",name:"Theatre of Blood",cat:"Raids",gphr:9,drops:[{n:"Scythe of Vitur",ge:800000000,i:22486},{n:"Ghrazi Rapier",ge:80000000,i:22324},{n:"Sanguinesti Staff",ge:100000000,i:22481},{n:"Avernic Defender Hilt",ge:60000000,i:22477},{n:"Justiciar Faceguard",ge:4000000,i:22326},{n:"Justiciar Leggings",ge:5000000,i:22330},{n:"Justiciar Chestguard",ge:5000000,i:22327},{n:"Lil' Zik",ge:0,pet:1}]},
+  {id:"tombs_of_amascut",name:"Tombs of Amascut",cat:"Raids",gphr:10,drops:[{n:"Tumeken's Shadow",ge:800000000,i:27275},{n:"Osmumten's Fang",ge:70000000,i:26219},{n:"Masori Mask",ge:15000000,i:27226},{n:"Masori Body",ge:50000000,i:27229},{n:"Masori Chaps",ge:30000000,i:27279},{n:"Elidinis' Ward",ge:200000000,i:25985},{n:"Lightbearer",ge:8000000,i:25975},{n:"Thread of Elidinis",ge:3000000,i:27372},{n:"Little Tektiny",ge:0,pet:1}]},
+  {id:"duke_sucellus",name:"Duke Sucellus",cat:"DT2 Bosses",gphr:3,drops:[{n:"Bellator Vestige",ge:80000000,i:28279},{n:"Awakener's Orb",ge:3000000,i:28252},{n:"Chromium Ingot",ge:1500000,i:28248},{n:"Duke",ge:0,pet:1}]},
+  {id:"the_leviathan",name:"The Leviathan",cat:"DT2 Bosses",gphr:3.5,drops:[{n:"Venator Vestige",ge:200000000,i:28285},{n:"Awakener's Orb",ge:3000000,i:28252},{n:"Leviathan",ge:0,pet:1}]},
+  {id:"the_whisperer",name:"The Whisperer",cat:"DT2 Bosses",gphr:3,drops:[{n:"Magus Vestige",ge:100000000,i:28283},{n:"Awakener's Orb",ge:3000000,i:28252},{n:"Wisp",ge:0,pet:1}]},
+  {id:"vardorvis",name:"Vardorvis",cat:"DT2 Bosses",gphr:4,drops:[{n:"Ultor Vestige",ge:150000000,i:28281},{n:"Awakener's Orb",ge:3000000,i:28252},{n:"Chromium Ingot",ge:1500000,i:28248},{n:"Butch",ge:0,pet:1}]},
+  {id:"phantom_muspah",name:"Phantom Muspah",cat:"End-Game",gphr:4,drops:[{n:"Saturated Heart",ge:50000000,i:27643},{n:"Ancient Shard",ge:600000,i:27616},{n:"Phosani's Nightmare (pet)",ge:0,pet:1}]},
+  {id:"corporeal_beast",name:"Corporeal Beast",cat:"End-Game",gphr:2,drops:[{n:"Elysian Sigil",ge:700000000,i:12817},{n:"Arcane Sigil",ge:50000000,i:12821},{n:"Spectral Sigil",ge:12000000,i:12823},{n:"Pet Dark Core",ge:0,pet:1}]},
+  {id:"corrupt_gauntlet",name:"Corrupted Gauntlet",cat:"End-Game",gphr:5,drops:[{n:"Enhanced Crystal Weapon Seed",ge:90000000,i:23901},{n:"Crystal Armour Seed",ge:700000,i:23956},{n:"Youngllef",ge:0,pet:1}]},
+  {id:"araxxor",name:"Araxxor",cat:"End-Game",gphr:5,drops:[{n:"Araxyte Fang",ge:80000000,i:28673},{n:"Noxious Pommel",ge:60000000,i:28674},{n:"Araxyte Head",ge:5000000,i:28672},{n:"Araxyte Pet",ge:0,pet:1}]},
+  {id:"sol_heredit",name:"Sol Heredit",cat:"End-Game",gphr:5,drops:[{n:"Dizana's Quiver",ge:70000000,i:27611},{n:"Tonalztics of Ralos",ge:120000000,i:27614},{n:"Sunfire Splinters",ge:800000,i:27627},{n:"Little Sol",ge:0,pet:1}]},
+  {id:"hueycoatl",name:"The Hueycoatl",cat:"End-Game",gphr:4,drops:[{n:"Dragon Hunter Wand",ge:30000000,i:29581},{n:"Hueycoatl Hide",ge:5000000,i:29578},{n:"Tome of Earth",ge:4000000,i:29580},{n:"Huberte",ge:0,pet:1}]},
+  {id:"yama",name:"Yama",cat:"End-Game",gphr:5,drops:[{n:"Abyssal Lantern",ge:50000000,i:32398},{n:"Obsidian Armour Seed",ge:20000000,i:32401},{n:"Abyssal Familiar",ge:0,pet:1}]},
+  {id:"tzkal_zuk",name:"TzKal-Zuk",cat:"Inferno",gphr:0,drops:[{n:"Infernal Cape",ge:3000000,i:21295},{n:"Lava Whip",ge:30000000,i:27690},{n:"Jal-Nib-Rek",ge:0,pet:1}]},
+  {id:"tztok_jad",name:"TzTok-Jad",cat:"Inferno",gphr:0,drops:[{n:"Fire Cape",ge:200000,i:6570},{n:"Jal-Nib-Rek (Fight Caves)",ge:0,pet:1}]},
+  {id:"barrows_chests",name:"Barrows",cat:"Misc",gphr:1.5,drops:[{n:"Dharok's Set",ge:4000000,i:4718},{n:"Ahrim's Set",ge:3500000,i:4708},{n:"Karil's Set",ge:2000000,i:4732},{n:"Guthan's Set",ge:2500000,i:4724},{n:"Verac's Set",ge:1000000,i:4753},{n:"Torag's Set",ge:700000,i:4745}]},
+  {id:"hespori",name:"Hespori",cat:"Misc",gphr:0.5,drops:[{n:"Bottomless Compost Bucket",ge:700000,i:22997},{n:"White Lily Seed",ge:50000,i:22887}]},
+  {id:"mimic",name:"The Mimic",cat:"Misc",gphr:0.5,drops:[{n:"3rd Age Piece",ge:0,i:10342},{n:"Pet Mimic",ge:0,pet:1}]},
 ];
 
-const GEAR_UPGRADES=[
-  {name:"Occult Necklace",slot:"Neck",source:"Smoke Devil",ge:600000,priority:1},
-  {name:"Serpentine Helm",slot:"Head",source:"Zulrah",ge:4200000,priority:1},
-  {name:"Toxic Blowpipe",slot:"2H Ranged",source:"Zulrah",ge:1200000,priority:1},
-  {name:"Bandos Chestplate",slot:"Body",source:"Bandos",ge:18000000,priority:1},
-  {name:"Bandos Tassets",slot:"Legs",source:"Bandos",ge:35000000,priority:1},
-  {name:"Primordial Boots",slot:"Feet",source:"Cerberus",ge:28000000,priority:1},
-  {name:"Pegasian Boots",slot:"Feet",source:"Cerberus",ge:18000000,priority:1},
-  {name:"Eternal Boots",slot:"Feet",source:"Cerberus",ge:28000000,priority:1},
-  {name:"Armadyl Helmet",slot:"Head",source:"Kree'arra",ge:5000000,priority:1},
-  {name:"Armadyl Chestplate",slot:"Body",source:"Kree'arra",ge:30000000,priority:1},
-  {name:"Armadyl Chainskirt",slot:"Legs",source:"Kree'arra",ge:22000000,priority:1},
-  {name:"Abyssal Whip",slot:"Weapon",source:"Abyssal Sire/Slayer",ge:1500000,priority:1},
-  {name:"Trident of the Swamp",slot:"Weapon",source:"Zulrah/Slayer",ge:4000000,priority:1},
-  {name:"Osmumten's Fang",slot:"Weapon",source:"ToA",ge:70000000,priority:2},
-  {name:"Ghrazi Rapier",slot:"Weapon",source:"ToB",ge:80000000,priority:2},
-  {name:"Avernic Defender",slot:"Off-hand",source:"ToB",ge:65000000,priority:2},
-  {name:"Ancestral Hat",slot:"Head",source:"CoX",ge:25000000,priority:2},
-  {name:"Ancestral Robe Top",slot:"Body",source:"CoX",ge:75000000,priority:2},
-  {name:"Ancestral Robe Bottom",slot:"Legs",source:"CoX",ge:55000000,priority:2},
-  {name:"Masori Mask",slot:"Head",source:"ToA",ge:15000000,priority:2},
-  {name:"Masori Body",slot:"Body",source:"ToA",ge:50000000,priority:2},
-  {name:"Masori Chaps",slot:"Legs",source:"ToA",ge:30000000,priority:2},
-  {name:"Twisted Bow",slot:"2H Ranged",source:"CoX",ge:1500000000,priority:2},
-  {name:"Scythe of Vitur",slot:"2H Melee",source:"ToB",ge:800000000,priority:2},
-  {name:"Tumeken's Shadow",slot:"2H Magic",source:"ToA",ge:800000000,priority:2},
-  {name:"Volatile Nightmare Staff",slot:"Weapon",source:"Nightmare",ge:60000000,priority:2},
-  {name:"Harmonised Nightmare Staff",slot:"Weapon",source:"Nightmare",ge:90000000,priority:2},
-  {name:"Inquisitor's Armour Set",slot:"Melee",source:"Nightmare",ge:110000000,priority:2},
-  {name:"Saturated Heart",slot:"Pocket",source:"Phantom Muspah",ge:50000000,priority:3},
-  {name:"Ultor Ring",slot:"Ring",source:"DT2 (Vardorvis)",ge:155000000,priority:3},
-  {name:"Venator Ring",slot:"Ring",source:"DT2 (Leviathan)",ge:210000000,priority:3},
-  {name:"Magus Ring",slot:"Ring",source:"DT2 (Whisperer)",ge:105000000,priority:3},
-  {name:"Bellator Ring",slot:"Ring",source:"DT2 (Duke)",ge:85000000,priority:3},
-  {name:"Torva Full Helm",slot:"Head",source:"Nex",ge:55000000,priority:3},
-  {name:"Torva Platebody",slot:"Body",source:"Nex",ge:100000000,priority:3},
-  {name:"Torva Platelegs",slot:"Legs",source:"Nex",ge:70000000,priority:3},
-  {name:"Zaryte Vambraces",slot:"Hands",source:"Nex",ge:12000000,priority:3},
-  {name:"Enhanced Crystal Weapon Seed",slot:"Weapon",source:"Corrupted Gauntlet",ge:90000000,priority:3},
-  {name:"Elidinis' Ward",slot:"Shield",source:"ToA",ge:200000000,priority:3},
-  {name:"Elysian Spirit Shield",slot:"Shield",source:"Corp Beast",ge:700000000,priority:3},
-  {name:"Dizana's Quiver",slot:"Ammo",source:"Sol Heredit",ge:70000000,priority:3},
-  {name:"Tonalztics of Ralos",slot:"Weapon",source:"Sol Heredit",ge:120000000,priority:3},
-  {name:"Noxious Scythe",slot:"Weapon",source:"Araxxor",ge:80000000,priority:3},
-  {name:"Infernal Cape",slot:"Back",source:"TzKal-Zuk",ge:3000000,priority:3},
-];
+const BCATS=["All","Slayer Boss","God Wars","Wilderness","DKs","World Boss","Perilous Moons","Raids","DT2 Bosses","End-Game","Inferno","Misc"];
+const COL_TABS=["Bosses","Raids","Clues","Minigames","Other"];
+const QQS=["What's my best GP/hr right now?","Which missing drops should I buy vs grind?","Build me a weekly bossing schedule","What boss should I prioritise for collection log?","Which DT2 ring should I get first?","What pets am I closest to getting?"];
 
-const CATS=["All","Slayer Boss","God Wars","Wilderness","Dagannoth Kings","World Boss","Perilous Moons","Raids","DT2 Bosses","End-Game","Inferno","Misc"];
-const QUICK_QS=["What's my best GP/hr right now given my KC and missing drops?","Which missing drops should I buy vs grind?","Build me an optimal weekly bossing schedule","What boss should I prioritise for collection log?","How many hours to afford my missing BIS gear?","Are wilderness bosses worth it on a main?","What pets am I closest to based on my KC?"];
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let womData=null,activeRsn="Southp0le",aiQ="",gistToken="",gistId="";
+let profiles={},catFilt="All";
+let colCats=null,colItems=null,colObtained=new Set(WSIDS),colSync=null;
+let colTab="Bosses",showMiss=false;
 
-function store(k,v){if(v===undefined){try{return JSON.parse(localStorage.getItem(k)||"null")}catch{return null}}try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
-let playerData=null,catFilter="All",aiQuery="",lastUpdated=null;
-let obtained=store("osrs_obtained")||{};
-let gearObtained=store("osrs_gear")||{};
-let petsObtained=store("osrs_pets")||{};
-
-function fmt(n){return n>=1e9?(n/1e9).toFixed(2)+"B":n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(0)+"K":String(n);}
-function fmtKc(n){return n<=0?"—":n.toLocaleString();}
-function getKc(id){const b=playerData?.latestSnapshot?.data?.bosses;if(!b)return 0;const v=b[id]?.kills??-1;return v<=0?0:v;}
-
-async function fetchPlayer(name){
-  if(!name)return;
-  document.getElementById("spinner-header").style.display="inline-block";
-  document.getElementById("error-box").style.display="none";
-  try{
-    await fetch(`${WOM_API}/${encodeURIComponent(name)}`,{method:"POST"}).catch(()=>{});
-    const res=await fetch(`${WOM_API}/${encodeURIComponent(name)}`);
-    if(!res.ok)throw new Error(`Player "${name}" not found on Wise Old Man.`);
-    playerData=await res.json();lastUpdated=new Date();store("osrs_username",name);
-    const totalKc=BOSS_META.reduce((s,b)=>s+getKc(b.id),0);
-    document.getElementById("header-sub").textContent=`${playerData.displayName} · ${(playerData.type||"main").toUpperCase()} · EHB: ${Math.round(playerData.ehb||0)} · Total KC: ${totalKc.toLocaleString()} · Updated ${lastUpdated.toLocaleTimeString()}`;
-    renderAll();
-  }catch(e){
-    document.getElementById("error-box").textContent="⚠ "+e.message;
-    document.getElementById("error-box").style.display="block";renderAll();
-  }finally{document.getElementById("spinner-header").style.display="none";}
+function ls(k,v){if(v===undefined){try{return JSON.parse(localStorage.getItem(k)||"null")}catch{return null}}try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+function P(){return profiles[activeRsn]||(profiles[activeRsn]={pets:{}});}
+function persist(){ls("profiles",profiles);ls("arsn",activeRsn);ls("gist_tok",gistToken);ls("gist_id",gistId);ls("col_cats",colCats);ls("col_items",colItems);ls("col_ob",[...colObtained]);ls("col_sync",colSync);}
+function loadState(){
+  gistToken=ls("gist_tok")||""; gistId=ls("gist_id")||"";
+  profiles=ls("profiles")||{}; activeRsn=ls("arsn")||"Southp0le";
+  colCats=ls("col_cats")||null; colItems=ls("col_items")||null; colSync=ls("col_sync")||null;
+  const ob=ls("col_ob"); colObtained=ob?new Set(ob):new Set(WSIDS);
+  if(!profiles[activeRsn])profiles[activeRsn]={pets:{}};
 }
-function loadPlayer(){fetchPlayer(document.getElementById("rsn-input").value.trim());}
-function refreshPlayer(){fetchPlayer(document.getElementById("rsn-input").value.trim());}
-function switchTab(tab,btn){document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));if(btn)btn.classList.add("active");document.getElementById("panel-"+tab).classList.add("active");}
-function renderAll(){renderDashboard();renderCollection();renderPets();renderGear();renderMoney();renderAdvisor();}
+function fmt(n){return n>=1e9?(n/1e9).toFixed(2)+"B":n>=1e6?(n/1e6).toFixed(1)+"M":n>=1e3?(n/1e3).toFixed(0)+"K":String(n);}
+function fkc(n){return n<=0?"—":n.toLocaleString();}
+function kc(id){const b=womData?.latestSnapshot?.data?.bosses;if(!b)return 0;const v=b[id]?.kills??-1;return v<=0?0:v;}
+function err(m){const e=document.getElementById("ebox");e.textContent="⚠ "+m;e.style.display="block";setTimeout(()=>e.style.display="none",6000);}
+function ok(m){const e=document.getElementById("sbox");e.textContent=m;e.style.display="block";setTimeout(()=>e.style.display="none",4000);}
+function spin(on){document.getElementById("spinhdr").style.display=on?"inline-block":"none";}
+function dot(s){const d=document.getElementById("sdot");d.className="sdot"+(s?" "+s:"");}
 
-function renderDashboard(){
-  BOSS_META.forEach(b=>b.drops.forEach(d=>d._bid=b.id));
-  const tD=BOSS_META.reduce((s,b)=>s+b.drops.filter(d=>!d.pet).length,0);
-  const oD=BOSS_META.reduce((s,b)=>s+b.drops.filter(d=>!d.pet&&obtained[b.id+":"+d.name]).length,0);
-  const tP=BOSS_META.reduce((s,b)=>s+b.drops.filter(d=>d.pet).length,0);
-  const oP=BOSS_META.reduce((s,b)=>s+b.drops.filter(d=>d.pet&&petsObtained[d.name]).length,0);
-  const gD=GEAR_UPGRADES.filter(g=>gearObtained[g.name]).length;
-  const bKc=BOSS_META.filter(b=>getKc(b.id)>0).length;
-  const tKc=BOSS_META.reduce((s,b)=>s+getKc(b.id),0);
-  const p1=Math.round(oD/tD*100),p2=Math.round(gD/GEAR_UPGRADES.length*100),p3=Math.round(oP/tP*100);
-  const sq=(document.getElementById("dash-search")?.value||"").toLowerCase();
-  const filt=(catFilter==="All"?BOSS_META:BOSS_META.filter(b=>b.cat===catFilter)).filter(b=>!sq||b.name.toLowerCase().includes(sq));
-  let h=`<div class="stat-grid">
-    <div class="stat-box"><div class="stat-num">${bKc}/${BOSS_META.length}</div><div class="stat-label">Bosses with KC</div></div>
-    <div class="stat-box"><div class="stat-num">${tKc.toLocaleString()}</div><div class="stat-label">Total KC</div></div>
-    <div class="stat-box"><div class="stat-num">${oD}/${tD}</div><div class="stat-label">Drops Obtained</div></div>
-    <div class="stat-box"><div class="stat-num">${oP}/${tP}</div><div class="stat-label">Pets Obtained</div></div>
+// ─── GIST ────────────────────────────────────────────────────────────────────
+let st=null;
+function sched(){clearTimeout(st);st=setTimeout(()=>saveToGist(true),2500);}
+async function saveToGist(silent=false){
+  if(!gistToken){if(!silent)err("No GitHub token. See ⚙ Settings.");return;}
+  dot("busy");
+  const body={description:"OSRS-Southp0le",public:false,files:{"osrs.json":{content:JSON.stringify({profiles,ob:[...colObtained],colSync})}}};
+  try{
+    let r;
+    if(gistId){r=await fetch(`https://api.github.com/gists/${gistId}`,{method:"PATCH",headers:{"Authorization":`token ${gistToken}`,"Content-Type":"application/json"},body:JSON.stringify(body)});}
+    else{r=await fetch("https://api.github.com/gists",{method:"POST",headers:{"Authorization":`token ${gistToken}`,"Content-Type":"application/json"},body:JSON.stringify(body)});if(r.ok){const d=await r.json();gistId=d.id;ls("gist_id",gistId);}}
+    if(r.ok){dot("ok");if(!silent)ok("Saved to Gist ✓");}else{dot("err");if(!silent)err("Gist save failed.");}
+  }catch{dot("err");if(!silent)err("Network error.");}
+}
+async function loadFromGist(){
+  if(!gistToken||!gistId){err("Token+ID required.");return;}
+  dot("busy");spin(true);
+  try{
+    const r=await fetch(`https://api.github.com/gists/${gistId}`,{headers:{"Authorization":`token ${gistToken}`}});
+    if(!r.ok)throw 0;
+    const d=await r.json();const c=d.files["osrs.json"]?.content;if(!c)throw 0;
+    const x=JSON.parse(c);
+    if(x.profiles)profiles=x.profiles;
+    if(x.ob)colObtained=new Set(x.ob);
+    if(x.colSync)colSync=x.colSync;
+    persist();dot("ok");ok("Loaded from Gist ✓");renderAll();
+  }catch{dot("err");err("Could not load from Gist.");}
+  finally{spin(false);}
+}
+
+// ─── WOM ─────────────────────────────────────────────────────────────────────
+async function refreshWOM(){
+  spin(true);
+  const nm=document.getElementById("rsn").value.trim()||activeRsn;
+  try{
+    await fetch(`${WOM}/${encodeURIComponent(nm)}`,{method:"POST"}).catch(()=>{});
+    const r=await fetch(`${WOM}/${encodeURIComponent(nm)}`);
+    if(!r.ok)throw new Error(`"${nm}" not found on Wise Old Man`);
+    womData=await r.json();
+    const tkc=BOSSES.reduce((s,b)=>s+kc(b.id),0);
+    document.getElementById("htitle").textContent=womData.displayName||nm;
+    document.getElementById("hsub").textContent=`${(womData.type||"main").toUpperCase()} · EHB: ${Math.round(womData.ehb||0)} · KC: ${tkc.toLocaleString()}${colSync?" · Synced: "+new Date(colSync).toLocaleDateString():""}`;
+    document.getElementById("wbanner").innerHTML=`Welcome back, <strong>${womData.displayName||nm}</strong> &nbsp;·&nbsp; Maxed Main &nbsp;·&nbsp; ❄ ${colObtained.size.toLocaleString()} collection log items`;
+    renderAll();
+  }catch(e){err(e.message);}
+  finally{spin(false);}
+}
+
+// ─── TEMPLE SYNC ─────────────────────────────────────────────────────────────
+async function syncColLog(){
+  spin(true);ok("Syncing from TempleOSRS...");
+  const nm=document.getElementById("rsn").value.trim()||activeRsn;
+  try{
+    // Fetch item map and categories if needed
+    if(!colItems){
+      const r=await fetch(`${TEMPLE}/items.php`);
+      if(!r.ok)throw new Error("items.php failed");
+      const raw=await r.json();
+      // Temple returns { "id": "name", ... } or { data: {...} }
+      colItems=raw.data||raw;
+      ls("col_items",colItems);
+    }
+    if(!colCats){
+      const r=await fetch(`${TEMPLE}/categories.php`);
+      if(!r.ok)throw new Error("categories.php failed");
+      const raw=await r.json();
+      colCats=raw.data||raw;
+      ls("col_cats",colCats);
+    }
+    // Fetch player items
+    const r=await fetch(`${TEMPLE}/player_collection_log.php?player=${encodeURIComponent(nm)}&categories=all`);
+    if(!r.ok)throw new Error(`Player fetch failed (${r.status}) — sync in-game first`);
+    const raw=await r.json();
+    const data=raw.data||raw;
+    const newOb=new Set();
+    // Handle various response shapes
+    function extractIds(obj){
+      if(Array.isArray(obj)){obj.forEach(id=>newOb.add(Number(id)));}
+      else if(typeof obj==="object"&&obj){
+        Object.entries(obj).forEach(([k,v])=>{
+          if(typeof v==="object"&&v!==null){
+            if(v.items)extractIds(v.items);
+            else extractIds(v);
+          } else if(!isNaN(Number(k))&&(v===true||v===1||typeof v==="number")){
+            newOb.add(Number(k));
+          }
+        });
+      }
+    }
+    extractIds(data);
+    if(newOb.size>100){
+      colObtained=newOb;
+      ok(`Collection log synced! ${colObtained.size.toLocaleString()} items ✓`);
+    } else {
+      // Merge with existing
+      WSIDS.forEach(id=>colObtained.add(id));
+      err("TempleOSRS returned limited data — using WikiSync seed. Re-sync in-game and try again.");
+    }
+    colSync=new Date().toISOString();
+    persist();sched();renderAll();
+  }catch(e){
+    err("Sync error: "+e.message);
+    WSIDS.forEach(id=>colObtained.add(id));
+    renderAll();
+  }finally{spin(false);}
+}
+
+// ─── PROFILES ────────────────────────────────────────────────────────────────
+function addProfile(){
+  const v=document.getElementById("rsn").value.trim();if(!v)return;
+  if(!profiles[v])profiles[v]={pets:{}};
+  activeRsn=v;persist();renderProfiles();refreshWOM();
+}
+function switchP(rsn){activeRsn=rsn;document.getElementById("rsn").value=rsn;ls("arsn",rsn);renderProfiles();refreshWOM();}
+function renderProfiles(){
+  const b=document.getElementById("pbar");const ns=Object.keys(profiles);
+  b.innerHTML=ns.map(n=>`<button class="pchip${n===activeRsn?" active":""}" onclick="switchP('${n}')">${n}</button>`).join("")+
+    (ns.length?`<button class="pchip btn-danger btn-sm" onclick="delP()">✕ ${activeRsn}</button>`:"");
+}
+function delP(){if(!confirm("Remove "+activeRsn+"?"))return;delete profiles[activeRsn];activeRsn=Object.keys(profiles)[0]||"Southp0le";if(!profiles[activeRsn])profiles[activeRsn]={pets:{}};persist();renderProfiles();refreshWOM();}
+
+function sw(t,btn){document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));if(btn)btn.classList.add("active");document.getElementById("panel-"+t).classList.add("active");}
+function renderAll(){rDash();rCol();rPets();rMoney();rAdvisor();rSettings();}
+
+// ─── DASHBOARD ───────────────────────────────────────────────────────────────
+function rDash(){
+  const p=P();
+  const tD=BOSSES.reduce((s,b)=>s+b.drops.filter(d=>!d.pet).length,0);
+  const oD=BOSSES.reduce((s,b)=>s+b.drops.filter(d=>!d.pet&&d.i&&colObtained.has(d.i)).length,0);
+  const tP=BOSSES.reduce((s,b)=>s+b.drops.filter(d=>d.pet).length,0);
+  const oP=BOSSES.reduce((s,b)=>s+b.drops.filter(d=>d.pet&&p.pets[d.n]).length,0);
+  const bKc=BOSSES.filter(b=>kc(b.id)>0).length;
+  const tkc=BOSSES.reduce((s,b)=>s+kc(b.id),0);
+  const p1=Math.round(oD/tD*100),p2=Math.round(oP/tP*100);
+  const sq=(document.getElementById("dsrch")?.value||"").toLowerCase();
+  const filt=(catFilt==="All"?BOSSES:BOSSES.filter(b=>b.cat===catFilt)).filter(b=>!sq||b.name.toLowerCase().includes(sq));
+  let h=`<div class="sgrid">
+    <div class="sbox"><div class="snum">${bKc}/${BOSSES.length}</div><div class="slbl">Bosses w/ KC</div></div>
+    <div class="sbox"><div class="snum">${tkc.toLocaleString()}</div><div class="slbl">Total KC</div></div>
+    <div class="sbox"><div class="snum">${colObtained.size.toLocaleString()}</div><div class="slbl">Col Log Items</div></div>
+    <div class="sbox"><div class="snum">${oP}/${tP}</div><div class="slbl">Boss Pets</div></div>
   </div>
-  <div class="progress-wrap"><div class="progress-label"><span>❄ Collection Log</span><span>${p1}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${p1}%"></div></div></div>
-  <div class="progress-wrap"><div class="progress-label"><span>❄ BIS Gear</span><span>${p2}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${p2}%"></div></div></div>
-  <div class="progress-wrap"><div class="progress-label"><span>❄ Pets</span><span>${p3}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${p3}%"></div></div></div>
-  <input class="search-bar" id="dash-search" placeholder="❄ Search bosses..." value="${sq}" oninput="renderDashboard()"/>
-  <div class="filter-row">${CATS.map(c=>`<button class="filter-btn${catFilter===c?" active":""}" onclick="setCat('${c}')">${c}</button>`).join("")}</div>
-  <div class="boss-grid">${filt.map(b=>{
-    const kc=getKc(b.id);const drops=b.drops.filter(d=>!d.pet);const pets=b.drops.filter(d=>d.pet);const miss=drops.filter(d=>!obtained[b.id+":"+d.name]).length;
-    return `<div class="boss-card${kc>0?" has-kc":""}">
-      <span class="boss-kc-badge ${kc>0?"has-kc":"no-kc"}">${kc>0?fmtKc(kc)+" KC":"0 KC"}</span>
-      <div class="boss-name">${b.name}</div>
-      <div class="boss-cat">${b.cat}${b.gphr>0?" · ~"+b.gphr+"M/hr":""}</div>
-      ${miss>0?`<div class="boss-missing">❄ ${miss} drop${miss>1?"s":""} missing</div>`:""}
-      <div>${drops.map(d=>`<div class="boss-drop ${obtained[b.id+":"+d.name]?"obtained":"missing"}"><span>${obtained[b.id+":"+d.name]?"✓ ":""}${d.name}</span>${d.ge>0?`<span class="boss-drop-ge">${fmt(d.ge)}</span>`:""}</div>`).join("")}${pets.map(d=>`<div class="boss-drop pet ${petsObtained[d.name]?"obtained":""}"><span>${petsObtained[d.name]?"✓ ":""}🐾 ${d.name}</span></div>`).join("")}</div>
+  <div class="pw"><div class="pl"><span>❄ Boss Uniques</span><span>${oD}/${tD} (${p1}%)</span></div><div class="pb"><div class="pf" style="width:${p1}%"></div></div></div>
+  <div class="pw"><div class="pl"><span>❄ Boss Pets</span><span>${oP}/${tP} (${p2}%)</span></div><div class="pb"><div class="pf" style="width:${p2}%"></div></div></div>
+  ${colSync?`<p class="note" style="margin-bottom:8px">Col log synced ${new Date(colSync).toLocaleString()} · ${colObtained.size.toLocaleString()} items</p>`:`<p class="note" style="margin-bottom:8px">Seeded from WikiSync (${WSIDS.size} items) · Press ↻ Col Log to sync live data</p>`}
+  <input class="sb" id="dsrch" placeholder="❄ Search bosses..." value="${sq}" oninput="rDash()"/>
+  <div class="frow">${BCATS.map(c=>`<button class="fbtn${catFilt===c?" active":""}" onclick="setC('${c}')">${c}</button>`).join("")}</div>
+  <div class="bgrid">${filt.map(b=>{
+    const k2=kc(b.id);const drops=b.drops.filter(d=>!d.pet);const pets=b.drops.filter(d=>d.pet);
+    const miss=drops.filter(d=>d.i&&!colObtained.has(d.i)).length;
+    return`<div class="bcard${k2>0?" hkc":""}">
+      <span class="kbadge ${k2>0?"hkc":"nkc"}">${k2>0?fkc(k2)+" KC":"0 KC"}</span>
+      <div class="bname">${b.name}</div>
+      <div class="bcat">${b.cat}${b.gphr>0?" · ~"+b.gphr+"M/hr":""}</div>
+      ${miss>0?`<div style="font-size:10px;color:var(--rd);margin-bottom:3px">❄ ${miss} missing</div>`:""}
+      <div>${drops.map(d=>{const hv=d.i?colObtained.has(d.i):false;return`<div class="bdrop ${hv?"ob":"ms"}"><span>${hv?"✓ ":""}${d.n}</span>${d.ge>0?`<span class="bge">${fmt(d.ge)}</span>`:""}</div>`}).join("")}${pets.map(d=>`<div class="bdrop pt ${p.pets[d.n]?"ob":""}"><span>${p.pets[d.n]?"✓ ":""}🐾 ${d.n}</span></div>`).join("")}</div>
     </div>`;
-  }).join("")}</div>
-  <p class="note" style="margin-top:8px">Live KC from Wise Old Man · Mark drops in Collection tab · Pets in Pets tab</p>`;
+  }).join("")}</div>`;
   document.getElementById("panel-dashboard").innerHTML=h;
 }
-function setCat(c){catFilter=c;renderDashboard();}
+function setC(c){catFilt=c;rDash();}
 
-function renderCollection(sq){
-  sq=sq||document.getElementById("col-search")?.value||"";const q=sq.toLowerCase();
-  const tD=BOSS_META.reduce((s,b)=>s+b.drops.filter(d=>!d.pet).length,0);
-  const oD=BOSS_META.reduce((s,b)=>s+b.drops.filter(d=>!d.pet&&obtained[b.id+":"+d.name]).length,0);
-  const pct=Math.round(oD/tD*100);
-  let h=`<div class="progress-wrap"><div class="progress-label"><span>❄ Key Uniques</span><span>${oD} / ${tD}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></div>
-  <input class="search-bar" id="col-search" placeholder="❄ Search drops..." value="${sq.replace(/"/g,'&quot;')}" oninput="renderCollection(this.value)"/>`;
-  CATS.slice(1).forEach(cat=>{
-    const ch=BOSS_META.filter(b=>b.cat===cat).map(b=>{
-      const drops=b.drops.filter(d=>!d.pet&&(!q||d.name.toLowerCase().includes(q)||b.name.toLowerCase().includes(q)));
-      if(!drops.length)return"";
-      const kc=getKc(b.id);
-      return `<div style="font-family:'Cinzel',serif;font-size:11px;color:var(--ice-accent);padding:4px 0 2px;opacity:0.85">${b.name} <span style="opacity:0.4">(${fmtKc(kc)} KC)</span></div>`+
-        drops.map(d=>{const key=b.id+":"+d.name;const have=!!obtained[key];
-          return `<div class="item-row${have?" obtained":""}" onclick="toggleObtained('${key}')"><div class="checkbox${have?" checked":""}">${have?"✓":""}</div><span class="item-name${have?" obtained-text":""}">${d.name}</span>${d.ge>0?`<span class="item-gp">${fmt(d.ge)}</span>`:""}<span class="pill pill-ice">${b.name}</span></div>`;
-        }).join("");
-    }).join("");
-    if(ch)h+=`<div class="tier-label">${cat}</div>${ch}<div class="divider"></div>`;
-  });
-  h+=`<p class="note">Click to mark obtained · Saves in your browser automatically</p>`;
-  document.getElementById("panel-collection").innerHTML=h;
+// ─── COLLECTION LOG ──────────────────────────────────────────────────────────
+function rCol(){
+  const sq=(document.getElementById("csrch")?.value||"").toLowerCase();
+  let h=`<div class="col-sb">
+    <div class="col-status-item" style="text-align:center"><div class="csnum">${colObtained.size.toLocaleString()}</div><div class="cslbl">Obtained</div></div>
+    <div class="csdiv"></div>
+    <div style="text-align:center"><div class="csnum">${colSync?new Date(colSync).toLocaleDateString():"Never"}</div><div class="cslbl">Last Sync</div></div>
+    <div class="csdiv"></div>
+    <div style="flex:1;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-green" onclick="syncColLog()">↻ Sync TempleOSRS</button>
+      ${colCats?`<span style="font-size:11px;color:var(--gn)">✓ ${Object.keys(colCats).length} categories</span>`:`<span style="font-size:11px;color:var(--or)">Press Sync for full 1,700+ item view</span>`}
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+    <input class="sb" id="csrch" placeholder="❄ Search items or categories..." style="margin-bottom:0;flex:1;min-width:180px" oninput="rCol()" value="${sq.replace(/"/g,'&quot;')}"/>
+    <button class="tglbtn${showMiss?" active":""}" onclick="showMiss=!showMiss;rCol()">Missing Only</button>
+  </div>
+  <div class="col-tabs">${COL_TABS.map(t=>`<button class="col-tab${colTab===t?" active":""}" onclick="setColTab('${t}')">${t}</button>`).join("")}</div>`;
+
+  if(colCats&&colItems){
+    h+=renderFullCol(sq);
+  } else {
+    h+=renderFallbackCol(sq);
+  }
+  document.getElementById("panel-collog").innerHTML=h;
 }
-function toggleObtained(key){obtained[key]=!obtained[key];store("osrs_obtained",obtained);renderAll();}
 
-function renderPets(){
-  const all=BOSS_META.flatMap(b=>b.drops.filter(d=>d.pet).map(d=>({...d,boss:b.name,cat:b.cat,bossId:b.id})));
-  const tot=all.length,got=all.filter(p=>petsObtained[p.name]).length,pct=Math.round(got/tot*100);
-  let h=`<div class="progress-wrap"><div class="progress-label"><span>🐾 Pets Obtained</span><span>${got} / ${tot}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></div>`;
-  CATS.slice(1).forEach(cat=>{
-    const pets=all.filter(p=>p.cat===cat);if(!pets.length)return;
-    h+=`<div class="tier-label">${cat}</div>`;
-    pets.forEach(p=>{const have=!!petsObtained[p.name];const kc=getKc(p.bossId);
-      h+=`<div class="item-row pet-row${have?" obtained":""}" onclick="togglePet('${p.name.replace(/'/g,"\\'")}')"><div class="checkbox pet-check${have?" checked":""}">${have?"✓":""}</div><span class="item-name pet-name${have?" obtained-text":""}">${p.name}</span>${kc>0?`<span style="font-size:10px;color:var(--ice-dim);opacity:0.65">${fmtKc(kc)} KC</span>`:""}<span class="pill pill-purple">${p.boss}</span></div>`;
+const TAB_MAP={
+  "Bosses":["Abyssal Sire","Alchemical Hydra","Araxxor","Artio","Barrows Chests","Bryophyta","Callisto","Calvar'ion","Cerberus","Chambers of Xeric","Chambers of Xeric: Challenge Mode","Chaos Elemental","Chaos Fanatic","Commander Zilyana","Corporeal Beast","Corrupted Gauntlet","Crazy Archaeologist","Dagannoth Prime","Dagannoth Rex","Dagannoth Supreme","Deranged Archaeologist","Duke Sucellus","General Graardor","Giant Mole","Grotesque Guardians","Hespori","Kalphite Queen","King Black Dragon","Kraken","Kree'Arra","K'ril Tsutsaroth","Lunar Chest","The Mimic","Nex","The Nightmare","Obor","Phantom Muspah","Phosani's Nightmare","Sarachnis","Scorpia","Scurrius","Skotizo","Spindel","The Gauntlet","The Hueycoatl","The Leviathan","The Whisperer","TzKal-Zuk","TzTok-Jad","Vardorvis","Venenatis","Vet'ion","Vorkath","Wintertodt","Yama","Zalcano","Zulrah"],
+  "Raids":["Chambers of Xeric","Chambers of Xeric: Challenge Mode","Theatre of Blood","Theatre of Blood: Hard Mode","Tombs of Amascut","Tombs of Amascut: Expert Mode"],
+  "Clues":["Beginner Treasure Trails","Easy Treasure Trails","Medium Treasure Trails","Hard Treasure Trails","Elite Treasure Trails","Master Treasure Trails","Shared Treasure Trail Rewards"],
+  "Minigames":["Agility Pyramid","Barbarian Assault","Brimhaven Agility Arena","Castle Wars","Fishing Trawler","Gnome Restaurant","Hallowed Sepulchre","Last Man Standing","Mage Training Arena","Mahogany Homes","Pest Control","Rogues' Den","Shades of Mort'ton","Shooting Stars","Slayer","Soul Wars","Tempoross","The Nightmare Zone","Tithe Farm","Trouble Brewing","Volcanic Mine"],
+};
+
+function renderFullCol(sq){
+  const allCatNames=Object.keys(colCats);
+  const assigned=new Set([...TAB_MAP.Bosses,...TAB_MAP.Raids,...TAB_MAP.Clues,...TAB_MAP.Minigames]);
+  const other=allCatNames.filter(c=>!assigned.has(c));
+  const tabCats={...TAB_MAP,Other:other}[colTab]||[];
+  const active=tabCats.filter(c=>colCats[c]);
+
+  let tabTot=0,tabOb=0;
+  active.forEach(c=>{const items=colCats[c]||[];tabTot+=items.length;tabOb+=items.filter(id=>colObtained.has(Number(id))).length;});
+  const tpct=tabTot>0?Math.round(tabOb/tabTot*100):0;
+
+  let h=`<div class="pw"><div class="pl"><span>${colTab}</span><span>${tabOb.toLocaleString()}/${tabTot.toLocaleString()} (${tpct}%)</span></div><div class="pb"><div class="pf" style="width:${tpct}%"></div></div></div>`;
+
+  active.forEach(catName=>{
+    const items=(colCats[catName]||[]).map(Number);if(!items.length)return;
+    const got=items.filter(id=>colObtained.has(id));
+    const missing=items.filter(id=>!colObtained.has(id));
+    const pct=Math.round(got.length/items.length*100);
+    const display=(showMiss?missing:items).filter(id=>{
+      if(!sq)return true;
+      const nm=(colItems[String(id)]||colItems[id]||"id:"+id).toLowerCase();
+      return nm.includes(sq)||catName.toLowerCase().includes(sq);
+    });
+    if(!display.length&&sq)return;
+    h+=`<div>
+      <div class="cat-hdr">
+        <div class="cat-hdr-name">${catName}</div>
+        <div class="cat-hdr-bar"><div class="cat-hdr-fill" style="width:${pct}%"></div></div>
+        <div class="cat-hdr-cnt" style="color:${pct===100?"var(--gn)":"var(--dm)"}">${got.length}/${items.length}</div>
+      </div>
+      <div class="item-grid">${display.map(id=>{
+        const hv=colObtained.has(id);
+        const nm=colItems[String(id)]||colItems[id]||"Item #"+id;
+        return`<div class="ic ${hv?"have":"need"}" title="${nm}">${hv?"✓ ":""}${nm}</div>`;
+      }).join("")}</div>
+    </div>`;
+  });
+  if(!active.length)h+=`<p class="note" style="padding:20px 0">No categories found for this tab. Try syncing again.</p>`;
+  return h;
+}
+
+function renderFallbackCol(sq){
+  let h=`<p style="font-size:12px;color:var(--or);margin-bottom:12px">Showing boss uniques only · Press ↻ Sync TempleOSRS for all 1,700+ items across all tabs</p>`;
+  const bossCats=BCATS.slice(1);
+  bossCats.forEach(cat=>{
+    const catBosses=BOSSES.filter(b=>b.cat===cat);if(!catBosses.length)return;
+    let ch="";
+    catBosses.forEach(b=>{
+      const drops=b.drops.filter(d=>!d.pet&&(!sq||d.n.toLowerCase().includes(sq)||b.name.toLowerCase().includes(sq)));
+      if(!drops.length)return;
+      const allD=b.drops.filter(d=>!d.pet);const gotC=allD.filter(d=>d.i&&colObtained.has(d.i)).length;
+      ch+=`<div style="font-family:'Cinzel',serif;font-size:11px;color:var(--ac);padding:4px 0 2px">${b.name} <span style="opacity:0.4">(${fkc(kc(b.id))} KC · ${gotC}/${allD.length})</span></div>`;
+      drops.filter(d=>!showMiss||(d.i&&!colObtained.has(d.i))).forEach(d=>{
+        const hv=d.i?colObtained.has(d.i):false;
+        ch+=`<div class="ir${hv?" ob":""}"><div class="cb${hv?" ck":""}">${hv?"✓":""}</div><span class="in${hv?" ot":""}">${d.n}</span>${d.ge>0?`<span class="igp">${fmt(d.ge)}</span>`:""}<span class="pill pi">${b.name}</span></div>`;
+      });
+    });
+    if(ch)h+=`<div class="tlbl">${cat}</div>${ch}<div class="div"></div>`;
+  });
+  return h;
+}
+function setColTab(t){colTab=t;rCol();}
+
+// ─── PETS ────────────────────────────────────────────────────────────────────
+function rPets(){
+  const p=P();
+  const all=BOSSES.flatMap(b=>b.drops.filter(d=>d.pet).map(d=>({n:d.n,boss:b.name,cat:b.cat,bid:b.id})));
+  const tot=all.length,got=all.filter(x=>p.pets[x.n]).length,pct=Math.round(got/tot*100);
+  let h=`<div class="pw"><div class="pl"><span>🐾 Boss Pets</span><span>${got}/${tot} (${pct}%)</span></div><div class="pb"><div class="pf" style="width:${pct}%"></div></div></div>`;
+  BCATS.slice(1).forEach(cat=>{
+    const pets=all.filter(x=>x.cat===cat);if(!pets.length)return;
+    h+=`<div class="tlbl">${cat}</div>`;
+    pets.forEach(x=>{const hv=!!p.pets[x.n];const k2=kc(x.bid);
+      h+=`<div class="ir${hv?" ob":""}" onclick="togglePet('${x.n.replace(/'/g,"\\'")}')"><div class="cb${hv?" ck":""}">${hv?"✓":""}</div><span class="in pn${hv?" ot":""}">${x.n}</span>${k2>0?`<span style="font-size:10px;color:var(--dm)">${fkc(k2)} KC</span>`:""}<span class="pill pp">${x.boss}</span></div>`;
     });
   });
-  h+=`<p class="note" style="margin-top:6px">🐾 Good luck on the drops, Southp0le! · Click to mark obtained</p>`;
+  h+=`<p class="note" style="margin-top:6px">🐾 Good luck, Southp0le! Click to mark obtained</p>`;
   document.getElementById("panel-pets").innerHTML=h;
 }
-function togglePet(name){petsObtained[name]=!petsObtained[name];store("osrs_pets",petsObtained);renderAll();}
+function togglePet(n){const p=P();p.pets[n]=!p.pets[n];persist();sched();renderAll();}
 
-function renderGear(){
-  const gD=GEAR_UPGRADES.filter(g=>gearObtained[g.name]).length,pct=Math.round(gD/GEAR_UPGRADES.length*100);
-  const mv=GEAR_UPGRADES.filter(g=>!gearObtained[g.name]).reduce((s,g)=>s+g.ge,0);
-  let h=`<div class="progress-wrap"><div class="progress-label"><span>❄ BIS Gear</span><span>${gD} / ${GEAR_UPGRADES.length}</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></div>
-  <p style="font-size:11px;color:var(--ice-gold);opacity:0.75;margin-bottom:12px;font-style:italic">Total missing gear value: ~${fmt(mv)} GP</p>`;
-  [{t:1,l:"Core Upgrades"},{t:2,l:"Raid & Major Upgrades"},{t:3,l:"End-Game BIS"}].forEach(({t,l})=>{
-    h+=`<div class="tier-label">${l}</div>`;
-    GEAR_UPGRADES.filter(g=>g.priority===t).forEach(g=>{const have=!!gearObtained[g.name];
-      h+=`<div class="item-row${have?" obtained":""}" onclick="toggleGear('${g.name.replace(/'/g,"\\'")}')"><div class="checkbox${have?" checked":""}">${have?"✓":""}</div><span class="item-name${have?" obtained-text":""}">${g.name}</span><span class="pill pill-green">${g.slot}</span><span class="item-gp">${fmt(g.ge)}</span></div>`;
-    });
-  });
-  h+=`<p class="note" style="margin-top:6px">Click to toggle · All progress saves locally</p>`;
-  document.getElementById("panel-upgrades").innerHTML=h;
-}
-function toggleGear(name){gearObtained[name]=!gearObtained[name];store("osrs_gear",gearObtained);renderAll();}
-
-function renderMoney(){
-  const ranked=[...BOSS_META].filter(b=>b.gphr>0).map(b=>{
-    const kc=getKc(b.id),miss=b.drops.filter(d=>!d.pet&&!obtained[b.id+":"+d.name]),mv=miss.reduce((s,d)=>s+d.ge,0);
-    return {...b,kc,miss,mv,score:b.gphr*(mv>0?1.5:1)};
+// ─── GP/HR ───────────────────────────────────────────────────────────────────
+function rMoney(){
+  const ranked=[...BOSSES].filter(b=>b.gphr>0).map(b=>{
+    const k2=kc(b.id),miss=b.drops.filter(d=>!d.pet&&d.i&&!colObtained.has(d.i)),mv=miss.reduce((s,d)=>s+d.ge,0);
+    return{...b,k2,miss,mv,score:b.gphr*(mv>0?1.5:1)};
   }).sort((a,b)=>b.score-a.score);
   const rc=["#d4a843","#a0a0a0","#c07840"];
-  let h=`<div class="section-title">❄ GP/hr Priority — Southp0le</div>
-  <p style="font-size:11px;color:var(--ice-text2);opacity:0.65;margin-bottom:12px;font-style:italic">Bosses with missing drops weighted higher · Assumes Tbow / Scythe / Shadow BIS</p>`;
+  let h=`<div class="st">❄ GP/hr Priority — ${activeRsn}</div>
+  <p style="font-size:11px;color:var(--t2);opacity:0.65;margin-bottom:12px;font-style:italic">Weighted by missing drops · Assumes BIS gear</p>`;
   ranked.forEach((b,i)=>{
-    const c=i<3?rc[i]:"rgba(26,74,106,0.55)",tc=i<3?"#f0f0f0":"var(--ice-accent)";
-    h+=`<div class="money-card"><div class="money-left"><div class="rank-circle" style="background:${c};color:${tc}">${i+1}</div><div><div class="money-name">${b.name}</div><div class="money-sub">${b.kc>0?fmtKc(b.kc)+" KC · ":"No KC · "}${b.cat}</div></div></div><div class="money-right"><div class="money-gphr">~${b.gphr}M/hr</div>${b.miss.length>0?`<div class="money-missing">${b.miss.length} unique${b.miss.length>1?"s":""} missing</div>`:""}${b.mv>0?`<div class="money-value">${fmt(b.mv)} in drops</div>`:""}</div></div>`;
+    const c=i<3?rc[i]:"rgba(26,74,106,0.55)",tc=i<3?"#f0f0f0":"var(--ac)";
+    h+=`<div class="mc"><div class="ml"><div class="rc" style="background:${c};color:${tc}">${i+1}</div><div><div class="mn">${b.name}</div><div class="ms2">${b.k2>0?fkc(b.k2)+" KC · ":"No KC · "}${b.cat}</div></div></div><div class="mr2"><div class="mg">~${b.gphr}M/hr</div>${b.miss.length?`<div style="font-size:9px;color:var(--rd)">${b.miss.length} unique${b.miss.length>1?"s":""} missing</div>`:""}${b.mv?`<div style="font-size:9px;color:var(--go)">${fmt(b.mv)} in drops</div>`:""}</div></div>`;
   });
   document.getElementById("panel-money").innerHTML=h;
 }
 
-function renderAdvisor(){
+// ─── AI ──────────────────────────────────────────────────────────────────────
+function rAdvisor(){
   document.getElementById("panel-advisor").innerHTML=`
-  <div class="section-title">❄ AI Advisor — Powered by Claude</div>
-  <p style="font-size:12px;color:var(--ice-text2);opacity:0.65;margin-bottom:12px;font-style:italic">Your live KC, missing drops, pets and gear are passed to Claude automatically.</p>
-  <div class="ai-box"><div class="ai-ask-row"><input type="text" id="ai-input" placeholder="Ask Claude anything about your account..." value="${aiQuery.replace(/"/g,'&quot;')}" onkeydown="if(event.key==='Enter')askAI()"/><button class="btn" id="ask-btn" onclick="askAI()">Ask ❄</button></div></div>
-  <div id="ai-response-box"></div>
-  <div class="section-title" style="margin-top:12px">Quick Questions</div>
-  ${QUICK_QS.map(q=>`<div class="quick-q" onclick="setAiQ('${q.replace(/'/g,"\\'")}')"><span>❄ ${q}</span></div>`).join("")}`;
+  <div class="st">❄ AI Advisor</div>
+  <p style="font-size:12px;color:var(--t2);opacity:0.65;margin-bottom:10px;font-style:italic">Your KC, collection log (${colObtained.size} items), and pets are passed to Claude automatically.</p>
+  <div class="abox"><div class="arow"><input type="text" id="ai-in" placeholder="Ask anything..." value="${aiQ.replace(/"/g,'&quot;')}" onkeydown="if(event.key==='Enter')askAI()"/><button class="btn" id="aibtn" onclick="askAI()">Ask ❄</button></div></div>
+  <div id="airsp"></div>
+  <div class="st" style="margin-top:12px">Quick Questions</div>
+  ${QQS.map(q=>`<div class="qq" onclick="setQ('${q.replace(/'/g,"\\'")}')"><span>❄ ${q}</span></div>`).join("")}`;
 }
-function setAiQ(q){aiQuery=q;const i=document.getElementById("ai-input");if(i)i.value=q;}
+function setQ(q){aiQ=q;const i=document.getElementById("ai-in");if(i)i.value=q;}
 async function askAI(){
-  const inp=document.getElementById("ai-input");const q=inp?inp.value.trim():aiQuery;if(!q)return;aiQuery=q;
-  const btn=document.getElementById("ask-btn");if(btn){btn.disabled=true;btn.innerHTML='<span class="spinner"></span>';}
-  const kcS=BOSS_META.map(b=>`${b.name}:${getKc(b.id)}`).join(",");
-  const mD=BOSS_META.flatMap(b=>b.drops.filter(d=>!d.pet&&!obtained[b.id+":"+d.name]).map(d=>`${d.name}(${b.name},~${fmt(d.ge)}GP)`)).join(",");
-  const mG=GEAR_UPGRADES.filter(g=>!gearObtained[g.name]).map(g=>`${g.name}(~${fmt(g.ge)}GP)`).join(",");
-  const mP=BOSS_META.flatMap(b=>b.drops.filter(d=>d.pet&&!petsObtained[d.name]).map(d=>`${d.name}(${b.name})`)).join(",");
-  const rsn=document.getElementById("rsn-input")?.value||"Southp0le";
+  const p=P();const inp=document.getElementById("ai-in");const q=inp?inp.value.trim():aiQ;if(!q)return;aiQ=q;
+  const btn=document.getElementById("aibtn");if(btn){btn.disabled=true;btn.innerHTML='<span class="spin"></span>';}
+  const kcS=BOSSES.map(b=>`${b.name}:${kc(b.id)}`).join(",");
+  const mD=BOSSES.flatMap(b=>b.drops.filter(d=>!d.pet&&d.i&&!colObtained.has(d.i)).map(d=>`${d.n}(${b.name},${fmt(d.ge)})`)).join(",");
+  const mP=BOSSES.flatMap(b=>b.drops.filter(d=>d.pet&&!p.pets[d.n]).map(d=>`${d.n}(${b.name})`)).join(",");
   try{
-    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"Content-Type":"application/json"},
       body:JSON.stringify({model:"claude-sonnet-4-20250514",max_tokens:1000,
-        system:`You are an expert OSRS advisor for a maxed main account named "${rsn}" (ice/arctic themed player). They own a Twisted Bow, Scythe of Vitur, and Tumeken's Shadow. Boss KC: ${kcS}. Missing drops: ${mD||"None"}. Missing gear: ${mG||"None"}. Missing pets: ${mP||"None"}. Give direct specific actionable advice with GP values and rates. Max 300 words. Plain text only.`,
+        system:`You are an expert OSRS advisor for a maxed main named "${activeRsn}" (ice/arctic theme). Collection log: ${colObtained.size} items obtained. Boss KC: ${kcS}. Missing boss drops: ${mD||"None"}. Missing pets: ${mP||"None"}. Give direct specific actionable advice with GP values and rates. Max 300 words. Plain text only.`,
         messages:[{role:"user",content:q}]})});
-    const data=await res.json();const text=data.content?.[0]?.text||"No response.";
-    const box=document.getElementById("ai-response-box");
-    if(box)box.innerHTML=`<div class="ai-box"><div class="ai-response-label">❄ ADVISOR RESPONSE</div><div class="ai-response">${text.replace(/</g,"&lt;")}</div></div>`;
-  }catch(e){
-    const box=document.getElementById("ai-response-box");
-    if(box)box.innerHTML=`<div class="ai-box"><div class="ai-response" style="color:var(--ice-red)">Error reaching AI — please try again.</div></div>`;
-  }finally{if(btn){btn.disabled=false;btn.innerHTML="Ask ❄";}}
+    const d=await r.json();const text=d.content?.[0]?.text||"No response.";
+    const box=document.getElementById("airsp");
+    if(box)box.innerHTML=`<div class="abox"><div class="albl">❄ RESPONSE</div><div class="aresp">${text.replace(/</g,"&lt;")}</div></div>`;
+  }catch{const box=document.getElementById("airsp");if(box)box.innerHTML=`<div class="abox"><div class="aresp" style="color:var(--rd)">Error — please try again.</div></div>`;}
+  finally{if(btn){btn.disabled=false;btn.innerHTML="Ask ❄";}}
 }
 
-const savedRsn=store("osrs_username");
-if(savedRsn)document.getElementById("rsn-input").value=savedRsn;
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+function rSettings(){
+  document.getElementById("panel-settings").innerHTML=`
+  <div class="st">❄ GitHub Gist Sync</div>
+  <div style="border:1px solid var(--b2);border-radius:3px;padding:14px;background:rgba(7,21,37,0.8);margin-bottom:16px">
+    <div class="gstep"><div class="gnum">1</div><div class="gtxt">Go to <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a> → note "OSRS Dashboard" → expiry 1yr → tick only <code>gist</code> → Generate token</div></div>
+    <div class="gstep"><div class="gnum">2</div><div class="gtxt">Paste below and Save Token. All data auto-syncs to a private Gist on every change.</div></div>
+    <div class="gstep"><div class="gnum">3</div><div class="gtxt">Other devices: open your GitHub Pages URL → ⚙ Settings → paste same token + Gist ID → Load from Gist</div></div>
+    <div class="gstep"><div class="gnum">4</div><div class="gtxt">Friends: open your GitHub Pages URL, enter their RSN, use their own token — data is fully separate</div></div>
+  </div>
+  <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--ac);letter-spacing:1px;margin-bottom:6px">GITHUB TOKEN</div>
+  <div class="irow" style="padding:0;margin-bottom:10px"><input type="password" id="tokin" value="${gistToken}" placeholder="ghp_xxxx..."/><button class="btn" onclick="saveTok()">Save</button></div>
+  ${gistToken?`<p style="font-size:11px;color:var(--gn);margin-bottom:8px">✓ Token saved</p>`:""}
+  <div style="font-family:'Cinzel',serif;font-size:10px;color:var(--ac);letter-spacing:1px;margin-bottom:6px;margin-top:8px">GIST ID <span style="color:var(--dm);font-size:9px">(auto-created on first save)</span></div>
+  <div class="irow" style="padding:0;margin-bottom:12px"><input type="text" id="gistin" value="${gistId}" placeholder="Auto-created..."/><button class="btn" onclick="saveGid()">Set</button></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+    <button class="btn btn-green" onclick="saveToGist()">❄ Save Now</button>
+    <button class="btn" onclick="loadFromGist()">↓ Load from Gist</button>
+    <button class="btn btn-danger" onclick="clearTok()">Clear Token</button>
+  </div>
+  ${gistId?`<p style="font-size:11px;color:var(--t2);margin-bottom:16px">Gist ID: <code style="background:rgba(126,200,227,0.1);padding:2px 5px;border-radius:2px;color:var(--br)">${gistId}</code></p>`:""}
+
+  <div class="st">❄ TempleOSRS Collection Log</div>
+  <div style="border:1px solid var(--b2);border-radius:3px;padding:12px;background:rgba(7,21,37,0.7);margin-bottom:12px">
+    <div class="gstep"><div class="gnum">1</div><div class="gtxt">Install <strong style="color:var(--br)">TempleOSRS</strong> plugin from RuneLite Plugin Hub</div></div>
+    <div class="gstep"><div class="gnum">2</div><div class="gtxt">Open collection log in-game → click the TempleOSRS sync button</div></div>
+    <div class="gstep"><div class="gnum">3</div><div class="gtxt">Go to <a href="https://templeosrs.com" target="_blank">templeosrs.com</a> → search your name → press <strong style="color:var(--br)">Update</strong></div></div>
+    <div class="gstep"><div class="gnum">4</div><div class="gtxt">Press <strong style="color:var(--br)">↻ Col Log</strong> in the header — all ~1,700 items load automatically</div></div>
+  </div>
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px">
+    <button class="btn btn-green" onclick="syncColLog()">↻ Sync Collection Log</button>
+    ${colSync?`<span style="font-size:11px;color:var(--gn)">✓ ${new Date(colSync).toLocaleString()}</span>`:`<span style="font-size:11px;color:var(--or)">Not synced — using WikiSync seed (${WSIDS.size} items)</span>`}
+  </div>
+  ${colCats?`<p style="font-size:11px;color:var(--gn);margin-bottom:16px">✓ ${Object.keys(colCats).length} categories loaded</p>`:`<p style="font-size:11px;color:var(--t2);margin-bottom:16px">Category data loads automatically on first sync</p>`}
+
+  <div class="st">Profiles</div>
+  ${Object.keys(profiles).map(n=>`<div class="ir${n===activeRsn?" ob":""}"><span class="in">${n}</span>${n===activeRsn?'<span style="font-size:10px;color:var(--gn)">● active</span>':''}</div>`).join("")}
+
+  <div class="st" style="margin-top:16px">Danger Zone</div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="btn btn-danger" onclick="if(confirm('Reset pets?')){P().pets={};persist();sched();renderAll();ok('Done')}">Reset Pets</button>
+    <button class="btn btn-danger" onclick="if(confirm('Clear col log cache?')){colCats=null;colItems=null;colSync=null;colObtained=new Set(WSIDS);persist();renderAll();ok('Cleared')}">Clear Col Log</button>
+  </div>`;
+}
+function saveTok(){const v=document.getElementById("tokin")?.value?.trim();if(!v)return;gistToken=v;ls("gist_tok",v);ok("Token saved ✓");rSettings();}
+function saveGid(){const v=document.getElementById("gistin")?.value?.trim();if(!v)return;gistId=v;ls("gist_id",v);ok("Gist ID saved ✓");rSettings();}
+function clearTok(){gistToken="";gistId="";ls("gist_tok","");ls("gist_id","");ok("Cleared");rSettings();}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+loadState();
+renderProfiles();
+document.getElementById("rsn").value=activeRsn;
+if(gistToken)dot("ok");
 renderAll();
-fetchPlayer(document.getElementById("rsn-input").value||"Southp0le");
+refreshWOM();
 </script>
 </body>
 </html>
